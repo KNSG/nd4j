@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,12 +19,14 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.shape.Shape;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Calculate the max over a vector
@@ -32,11 +34,33 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class Max extends BaseAccumulation {
+    public Max(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public Max(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public Max() {
     }
 
     public Max(INDArray x, INDArray y, long n) {
         super(x, y, n);
+    }
+
+    /**
+     * Initialize with the given
+     * input, pairwise transform, result, and number
+     * of elements
+     *
+     * @param x the input
+     * @param y the pairwise transform
+     * @param z the result
+     * @param n the number of elements
+     */
+    public Max(INDArray x, INDArray y, INDArray z, long n) {
+        super(x, y, z, n);
     }
 
     public Max(INDArray x) {
@@ -47,60 +71,6 @@ public class Max extends BaseAccumulation {
         super(x, y);
     }
 
-    @Override
-    public double op(double origin, double other) {
-        return origin;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin;
-    }
-
-    @Override
-    public double update(double accum, double x){
-        return FastMath.max(accum, x);
-    }
-
-    @Override
-    public double update(double accum, double x, double y){
-        return FastMath.max(accum, x);
-    }
-
-    @Override
-    public float update(float accum, float x){
-        return FastMath.max(accum, x);
-    }
-
-    @Override
-    public float update(float accum, float x, float y){
-        return FastMath.max(accum, x);
-    }
-
-    @Override
-    public IComplexNumber update( IComplexNumber accum, double x) {
-        return (accum.absoluteValue().doubleValue() > x ? accum : Nd4j.createComplexNumber(x,0));
-    }
-
-    @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y){
-        return (accum.absoluteValue().doubleValue() > x ? accum : Nd4j.createComplexNumber(x,0));
-    }
-
-    @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
-        return (accum.absoluteValue().doubleValue() > x.absoluteValue().doubleValue() ? accum : x);
-    }
-
-    @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
-        return (accum.absoluteValue().doubleValue() > x.absoluteValue().doubleValue() ? accum : x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
-        return (accum.absoluteValue().doubleValue() > x.absoluteValue().doubleValue() ? accum : x);
-    }
 
     @Override
     public int opNum() {
@@ -108,7 +78,7 @@ public class Max extends BaseAccumulation {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "max";
     }
 
@@ -118,27 +88,44 @@ public class Max extends BaseAccumulation {
     }
 
     @Override
-    public float zeroFloat(){
+    public float zeroHalf() {
+        return -65503.0f;
+    }
+
+    @Override
+    public float zeroFloat() {
         return -Float.MAX_VALUE;
     }
 
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        if (y() != null)
-            return new Max(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Max(x.vectorAlongDimension(index, dimension));
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+        //TODO do we need to handle the "multiple equal maximums" case?
+        //TODO code duplication (min/max)
+
+        SDVariable out = outputVariables()[0];
+        int origRank = Shape.rankFromShape(arg().getShape());
+        SDVariable expandedOut = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, out);
+        expandedOut = sameDiff.onesLike(arg()).mul(expandedOut);
+        SDVariable expandedGrad = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
+
+        SDVariable eq = sameDiff.eq(arg(), expandedOut);
+        SDVariable ret = eq.mul(expandedGrad);
+        return Arrays.asList(ret);
     }
 
     @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+    public String onnxName() {
+        return "ReduceMax";
+    }
 
-        if (y() != null)
-            return new Max(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Max(x.tensorAlongDimension(index, dimension));
+    @Override
+    public String tensorflowName() {
+        return "Max";
+    }
+
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
     }
 }

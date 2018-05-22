@@ -5,8 +5,9 @@ ND4J: Scientific Computing on the JVM
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.nd4j/nd4j/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.nd4j/nd4j)
 [![Javadoc](https://javadoc-emblem.rhcloud.com/doc/org.nd4j/nd4j/badge.svg)](http://nd4j.org/doc)
 
-ND4J is an Apache2 Licensed open-sourced scientific computing library for the JVM. It is meant to be used in production environments
-rather than as a research tool, which means routines are designed to run fast with minimum RAM requirements.
+ND4J is an Apache 2.0-licensed scientific computing library for the JVM. By contributing code to this repository, you agree to make your contribution available under an Apache 2.0 license.
+
+It is meant to be used in production environments rather than as a research tool, which means routines are designed to run fast with minimum RAM requirements.
 
 Please search for the latest version on search.maven.org.
 
@@ -65,72 +66,19 @@ To install ND4J, there are a couple of approaches, and more information can be f
 
 #### Clone from the GitHub Repo
 
-ND4J is actively developed. You can clone the repository, compile it, and reference it in your project.
-
-Clone the repository:
-
-    $ git clone https://github.com/deeplearning4j/nd4j.git
-
-Compile the project:
-
-    $ cd nd4j
-    $ mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true
-
-Add the local compiled file dependency (choose the module for your backend) to your pom.xml file:
-
-    <dependency>
-        <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-native</artifactId>
-        <version>${nd4j.version}</version>
-    </dependency>
-
-#### Yum Install / Load RPM (Fedora or CentOS)
-Create a yum repo and run yum install to load the Red Hat Package Management (RPM) files. First create the repo file to setup the configuration locally.
-
-    $ sudo vi /etc/yum.repos.d/dl4j.repo
-
-Add the following to the dl4j.repo file:
-
-'''
-
-    [dl4j.repo]
-
-    name=dl4j-repo
-    baseurl=http://ec2-52-5-255-24.compute-1.amazonaws.com/repo/RPMS
-    enabled=1
-    gpgcheck=0
-'''
-
-Then run the following command on the dl4j repo packages to install them on your machine:
-
-    $ sudo yum install [package name] -y
-    $ sudo yum install nd4j-cli -y # for example
-
-Note, be sure to install the nd4j modules you need first, especially the backend and then install Canova and dl4j.
-
----
-## Tests
-
-Run the following command to execute all tests at once.
-
-    mvn test
-
-Or, run the following command to execute TestSuite with only specified backend e.g. nd4j-cuda-7.5 on GPU.
-
-    mvn test -pl nd4j-XXX
-
-- nd4j-cuda-7.5
-- nd4j-native
-
-Or, run the following command to execute only specified tests in TestSuite with only specified backend.
-
-     mvn test -pl nd4j-XXX -Dorg.nd4j.linalg.tests.classestorun=org.nd4j.linalg.YYY -Dorg.nd4j.linalg.tests.methods=ZZZ
-
----
+https://deeplearning4j.org/buildinglocally 
 ## Contribute
 
 1. Check for open issues, or open a new issue to start a discussion around a feature idea or a bug.
 2. If you feel uncomfortable or uncertain about an issue or your changes, feel free to contact us on Gitter using the link above.
 3. Fork [the repository](https://github.com/deeplearning4j/nd4j.git) on GitHub to start making your changes to the **master** branch (or branch off of it).
 4. Write a test, which shows that the bug was fixed or that the feature works as expected.
-5. Send a pull request, and bug us on Gitter until it gets merged and published.
+5. Note the repository follows
+   the [Google Java style](https://google.github.io/styleguide/javaguide.html)
+   with two modifications: 120-char column wrap and 4-spaces indentation. You
+   can format your code to this format by typing `mvn formatter:format` in the
+   subproject you work on, by using the `contrib/formatter.xml` at the root of
+   the repository to configure the Eclipse formatter, or by [using the INtellij
+   plugin](https://github.com/HPI-Information-Systems/Metanome/wiki/Installing-the-google-styleguide-settings-in-intellij-and-eclipse).
+
+6. Send a pull request, and bug us on Gitter until it gets merged and published.

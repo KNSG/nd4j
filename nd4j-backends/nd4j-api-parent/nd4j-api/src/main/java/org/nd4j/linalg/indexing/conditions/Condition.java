@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,6 +35,8 @@ public interface Condition extends Function<Number, Boolean> {
     int condtionNum();
 
     double getValue();
+
+    double epsThreshold();
 
     @Override
     Boolean apply(Number input);

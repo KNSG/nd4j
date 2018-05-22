@@ -3,9 +3,8 @@ package org.nd4j.jita.memory.impl;
 import junit.framework.TestCase;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -25,9 +24,7 @@ import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -136,7 +133,7 @@ public class DelayedMemoryTest extends TestCase {
             assertNotEquals(allocator.getAllocationPoint(arrays[c].shapeInfoDataBuffer()).getPointers().getDevicePointer(), allocator.getAllocationPoint(arrays[c].shapeInfoDataBuffer()).getPointers().getHostPointer());
         }
 
-        int numDevices = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size();
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         for (int c = 0; c < numDevices; c++) {
             assertTrue("Failed to find device ["+ c +"] in used devices", ArrayUtils.contains(cards, c));
         }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -253,10 +253,10 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
     void setColumnNames(List<String> columnNames);
 
     /**
-     * Split the DataSet into two DataSets randomly
-     * @param percentTrain    Percentage of examples to be returned in the training DataSet object
+     * SplitV the DataSet into two DataSets randomly
+     * @param fractionTrain    Fraction (in range 0 to 1) of examples to be returned in the training DataSet object
      */
-    SplitTestAndTrain splitTestAndTrain(double percentTrain);
+    SplitTestAndTrain splitTestAndTrain(double fractionTrain);
 
     @Override
     Iterator<org.nd4j.linalg.dataset.DataSet> iterator();
@@ -305,7 +305,7 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
      * Get the example metadata, or null if no metadata has been set<br>
      * Note: this method results in an unchecked cast - care should be taken when using this!
      *
-     * @param metaDataType Class of the metadata (used for type information)
+     * @param metaDataType Class of the metadata (used for opType information)
      * @param <T>          Type of metadata
      * @return List of metadata objects
      */
@@ -319,4 +319,24 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
      */
     List<Serializable> getExampleMetaData();
 
+    /**
+     * This method returns memory used by this DataSet
+     * @return
+     */
+    long getMemoryFootprint();
+
+    /**
+     * This method migrates this DataSet into current Workspace (if any)
+     */
+    void migrate();
+
+    /**
+     * This method detaches this DataSet from current Workspace (if any)
+     */
+    void detach();
+
+    /**
+     * @return true if the DataSet object is empty (no features, labels, or masks)
+     */
+    boolean isEmpty();
 }

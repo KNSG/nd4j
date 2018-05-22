@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,15 +19,19 @@
 
 package org.nd4j.linalg.api.buffer.factory;
 
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
 
 /**
  * DataBufferFactory: Creates the data buffer wrt
- * a specified data type
+ * a specified data opType
  *
  * @author Adam Gibson
  */
@@ -63,7 +67,7 @@ public interface DataBufferFactory {
      * @param length
      * @return
      */
-    DataBuffer createInt(int offset, ByteBuffer buffer, int length);
+    DataBuffer createInt(long offset, ByteBuffer buffer, int length);
 
     /**
      * Create a float data buffer
@@ -71,7 +75,7 @@ public interface DataBufferFactory {
      * @param length
      * @return
      */
-    DataBuffer createFloat(int offset, ByteBuffer buffer, int length);
+    DataBuffer createFloat(long offset, ByteBuffer buffer, int length);
 
     /**
      * Creates a double data buffer
@@ -79,14 +83,30 @@ public interface DataBufferFactory {
      * @param length
      * @return
      */
-    DataBuffer createDouble(int offset, ByteBuffer buffer, int length);
+    DataBuffer createDouble(long offset, ByteBuffer buffer, int length);
+
+    DataBuffer createLong(ByteBuffer buffer, int length);
 
     /**
      * Create a double data buffer
      *
      * @return the new data buffer
      */
-    DataBuffer createDouble(int offset, int length);
+    DataBuffer createDouble(long offset, int length);
+
+    /**
+     * This method will create new DataBuffer of the same dataType & same length
+     * @param buffer
+     * @return
+     */
+    DataBuffer createSame(DataBuffer buffer, boolean init);
+
+    /**
+     * This method will create new DataBuffer of the same dataType & same length
+     * @param buffer
+     * @return
+     */
+    DataBuffer createSame(DataBuffer buffer, boolean init, MemoryWorkspace workspace);
 
     /**
      * Create a float data buffer
@@ -94,7 +114,7 @@ public interface DataBufferFactory {
      * @param length the length of the buffer
      * @return the new data buffer
      */
-    DataBuffer createFloat(int offset, int length);
+    DataBuffer createFloat(long offset, int length);
 
     /**
      * Create an int data buffer
@@ -102,7 +122,7 @@ public interface DataBufferFactory {
      * @param length the length of the data buffer
      * @return the create data buffer
      */
-    DataBuffer createInt(int offset, int length);
+    DataBuffer createInt(long offset, int length);
 
 
     /**
@@ -111,7 +131,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset, int[] data);
+    DataBuffer createDouble(long offset, int[] data);
 
     /**
      * Creates a double data buffer
@@ -119,7 +139,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset, int[] data);
+    DataBuffer createFloat(long offset, int[] data);
 
     /**
      * Creates a double data buffer
@@ -127,7 +147,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset, int[] data);
+    DataBuffer createInt(long offset, int[] data);
 
     /**
      * Creates a double data buffer
@@ -135,7 +155,9 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset, double[] data);
+    DataBuffer createDouble(long offset, double[] data);
+
+    DataBuffer createDouble(long offset, double[] data, MemoryWorkspace workspace);
 
 
     /**
@@ -144,7 +166,7 @@ public interface DataBufferFactory {
      * @param length
      * @return
      */
-    DataBuffer createDouble(int offset, byte[] data, int length);
+    DataBuffer createDouble(long offset, byte[] data, int length);
 
     /**
      * Create a double buffer
@@ -152,7 +174,7 @@ public interface DataBufferFactory {
      * @param length
      * @return
      */
-    DataBuffer createFloat(int offset, byte[] data, int length);
+    DataBuffer createFloat(long offset, byte[] data, int length);
 
     /**
      * Creates a float data buffer
@@ -160,7 +182,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset, double[] data);
+    DataBuffer createFloat(long offset, double[] data);
 
     /**
      * Creates an int data buffer
@@ -168,7 +190,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset, double[] data);
+    DataBuffer createInt(long offset, double[] data);
 
     /**
      * Creates a double data buffer
@@ -176,7 +198,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset, float[] data);
+    DataBuffer createDouble(long offset, float[] data);
 
     /**
      * Creates a float data buffer
@@ -184,7 +206,9 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset, float[] data);
+    DataBuffer createFloat(long offset, float[] data);
+
+    DataBuffer createFloat(long offset, float[] data, MemoryWorkspace workspace);
 
     /**
      * Creates an int data buffer
@@ -192,7 +216,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset, float[] data);
+    DataBuffer createInt(long offset, float[] data);
 
 
     /**
@@ -201,7 +225,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset, int[] data, boolean copy);
+    DataBuffer createDouble(long offset, int[] data, boolean copy);
 
     /**
      * Creates a double data buffer
@@ -209,7 +233,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset, int[] data, boolean copy);
+    DataBuffer createFloat(long offset, int[] data, boolean copy);
 
     /**
      * Creates a double data buffer
@@ -217,7 +241,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset, int[] data, boolean copy);
+    DataBuffer createInt(long offset, int[] data, boolean copy);
 
     /**
      * Creates a double data buffer
@@ -225,7 +249,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset, double[] data, boolean copy);
+    DataBuffer createDouble(long offset, double[] data, boolean copy);
 
     /**
      * Creates a float data buffer
@@ -233,7 +257,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset, double[] data, boolean copy);
+    DataBuffer createFloat(long offset, double[] data, boolean copy);
 
     /**
      * Creates an int data buffer
@@ -241,7 +265,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset, double[] data, boolean copy);
+    DataBuffer createInt(long offset, double[] data, boolean copy);
 
     /**
      * Creates a double data buffer
@@ -249,7 +273,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createDouble(int offset, float[] data, boolean copy);
+    DataBuffer createDouble(long offset, float[] data, boolean copy);
 
     /**
      * Creates a float data buffer
@@ -257,7 +281,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createFloat(int offset, float[] data, boolean copy);
+    DataBuffer createFloat(long offset, float[] data, boolean copy);
 
     /**
      * Creates an int data buffer
@@ -265,7 +289,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createInt(int offset, float[] data, boolean copy);
+    DataBuffer createInt(long offset, float[] data, boolean copy);
 
 
     /**
@@ -308,6 +332,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createDouble(long length, boolean initialize);
 
+    DataBuffer createDouble(long length, boolean initialize, MemoryWorkspace workspace);
+
     /**
      * Create a float data buffer
      *
@@ -325,6 +351,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createFloat(long length, boolean initialize);
 
+    DataBuffer createFloat(long length, boolean initialize, MemoryWorkspace workspace);
+
     /**
      * Create an int data buffer
      *
@@ -341,6 +369,26 @@ public interface DataBufferFactory {
      * @return the create data buffer
      */
     DataBuffer createInt(long length, boolean initialize);
+
+    DataBuffer createInt(long length, boolean initialize, MemoryWorkspace workspace);
+
+
+    DataBuffer createLong(long[] data);
+
+    DataBuffer createLong(long[] data, boolean copy);
+
+    DataBuffer createLong(long length);
+
+    /**
+     * Create an int data buffer, with optional initialization
+     *
+     * @param length the length of the data buffer
+     * @param initialize If true: initialize the buffer. If false: don't initialize.
+     * @return the create data buffer
+     */
+    DataBuffer createLong(long length, boolean initialize);
+
+    DataBuffer createLong(long length, boolean initialize, MemoryWorkspace workspace);
 
     /**
      * Creates a double data buffer
@@ -365,6 +413,10 @@ public interface DataBufferFactory {
      * @return the new buffer
      */
     DataBuffer createInt(int[] data);
+
+    DataBuffer createInt(int[] data, MemoryWorkspace workspace);
+
+    DataBuffer createInt(int[] data, boolean copy, MemoryWorkspace workspace);
 
     /**
      * Creates a double data buffer
@@ -423,6 +475,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createFloat(float[] data);
 
+    DataBuffer createFloat(float[] data, MemoryWorkspace workspace);
+
     /**
      * Creates an int data buffer
      *
@@ -465,6 +519,24 @@ public interface DataBufferFactory {
     DataBuffer createDouble(double[] data, boolean copy);
 
     /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(double[] data, MemoryWorkspace workspace);
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(double[] data, boolean copy, MemoryWorkspace workspace);
+
+
+
+    /**
      * Creates a float data buffer
      *
      * @param data the data to create the buffer from
@@ -496,6 +568,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createFloat(float[] data, boolean copy);
 
+    DataBuffer createFloat(float[] data, boolean copy, MemoryWorkspace workspace);
+
     /**
      * Creates an int data buffer
      *
@@ -507,17 +581,41 @@ public interface DataBufferFactory {
 
     /**
      * Create a data buffer based on the
-     * given pointer, data buffer type,
+     * given pointer, data buffer opType,
      * and length of the buffer
      * @param pointer the pointer to use
-     * @param type the type of buffer
+     * @param type the opType of buffer
      * @param length the length of the buffer
      * @param indexer
      * @return the data buffer
      * backed by this pointer with the given
-     * type and length.
+     * opType and length.
      */
     DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer);
+
+    /**
+     *
+     * @param doublePointer
+     * @param length
+     * @return
+     */
+    DataBuffer create(DoublePointer doublePointer, long length);
+
+    /**
+     *
+     * @param intPointer
+     * @param length
+     * @return
+     */
+    DataBuffer create(IntPointer intPointer, long length);
+
+    /**
+     *
+     * @param floatPointer
+     * @param length
+     * @return
+     */
+    DataBuffer create(FloatPointer floatPointer, long length);
 
     /**
      * Creates half-precision data buffer
@@ -536,6 +634,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createHalf(long length, boolean initialize);
 
+    DataBuffer createHalf(long length, boolean initialize, MemoryWorkspace workspace);
+
     /**
      * Creates a half-precision data buffer
      *
@@ -543,6 +643,12 @@ public interface DataBufferFactory {
      * @return the new buffer
      */
     DataBuffer createHalf(float[] data, boolean copy);
+
+    DataBuffer createHalf(float[] data, MemoryWorkspace workspace);
+
+    DataBuffer createHalf(float[] data, boolean copy, MemoryWorkspace workspace);
+
+
 
     /**
      * Creates a half-precision data buffer
@@ -559,7 +665,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createHalf(int offset, double[] data, boolean copy);
+    DataBuffer createHalf(long offset, double[] data, boolean copy);
 
     /**
      * Creates a half-precision data buffer
@@ -567,7 +673,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createHalf(int offset, float[] data, boolean copy);
+    DataBuffer createHalf(long offset, float[] data, boolean copy);
 
     /**
      * Creates a half-precision data buffer
@@ -575,7 +681,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createHalf(int offset, int[] data, boolean copy);
+    DataBuffer createHalf(long offset, int[] data, boolean copy);
 
     /**
      * Creates a half-precision data buffer
@@ -583,7 +689,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createHalf(int offset, double[] data);
+    DataBuffer createHalf(long offset, double[] data);
 
     /**
      * Creates a half-precision data buffer
@@ -591,7 +697,9 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createHalf(int offset, float[] data);
+    DataBuffer createHalf(long offset, float[] data);
+
+    DataBuffer createHalf(long offset, float[] data, MemoryWorkspace workspace);
 
     /**
      * Creates a half-precision data buffer
@@ -599,7 +707,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createHalf(int offset, int[] data);
+    DataBuffer createHalf(long offset, int[] data);
 
     /**
      * Creates a half-precision data buffer
@@ -607,7 +715,7 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createHalf(int offset, byte[] data, boolean copy);
+    DataBuffer createHalf(long offset, byte[] data, boolean copy);
 
     /**
      * Creates a half-precision data buffer
@@ -647,14 +755,14 @@ public interface DataBufferFactory {
      * @param data the data to create the buffer from
      * @return the new buffer
      */
-    DataBuffer createHalf(int offset, byte[] data, int length);
+    DataBuffer createHalf(long offset, byte[] data, int length);
 
     /**
      * Creates a half-precision data buffer
      *
      * @return the new buffer
      */
-    DataBuffer createHalf(int offset, int length);
+    DataBuffer createHalf(long offset, int length);
 
     /**
      * Creates a half-precision data buffer
@@ -671,5 +779,16 @@ public interface DataBufferFactory {
      * @return
      */
     DataBuffer createHalf(byte[] data, int length);
+
+
+    Class<? extends DataBuffer> intBufferClass();
+
+    Class<? extends DataBuffer> longBufferClass();
+
+    Class<? extends DataBuffer> halfBufferClass();
+
+    Class<? extends DataBuffer> floatBufferClass();
+
+    Class<? extends DataBuffer> doubleBufferClass();
 
 }

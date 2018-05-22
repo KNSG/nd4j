@@ -10,7 +10,8 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by agibsonccc on 9/23/16.
@@ -22,19 +23,34 @@ public class AeronNDArraySerdeTest {
         INDArray arr = Nd4j.scalar(1.0);
         UnsafeBuffer buffer = AeronNDArraySerde.toBuffer(arr);
         INDArray back = AeronNDArraySerde.toArray(buffer);
-        assertEquals(arr,back);
+        assertEquals(arr, back);
     }
 
     @Test
     public void testToAndFromCompressed() {
         INDArray arr = Nd4j.scalar(1.0);
-        INDArray compress = Nd4j.getCompressor().compress(arr,"GZIP");
+        INDArray compress = Nd4j.getCompressor().compress(arr, "GZIP");
         assertTrue(compress.isCompressed());
         UnsafeBuffer buffer = AeronNDArraySerde.toBuffer(compress);
         INDArray back = AeronNDArraySerde.toArray(buffer);
         INDArray decompressed = Nd4j.getCompressor().decompress(compress);
-        assertEquals(arr,decompressed);
+        assertEquals(arr, decompressed);
+        assertEquals(arr, back);
     }
+
+
+    @Test
+    public void testToAndFromCompressedLarge() {
+        INDArray arr = Nd4j.zeros((int) 1e7);
+        INDArray compress = Nd4j.getCompressor().compress(arr, "GZIP");
+        assertTrue(compress.isCompressed());
+        UnsafeBuffer buffer = AeronNDArraySerde.toBuffer(compress);
+        INDArray back = AeronNDArraySerde.toArray(buffer);
+        INDArray decompressed = Nd4j.getCompressor().decompress(compress);
+        assertEquals(arr, decompressed);
+        assertEquals(arr, back);
+    }
+
 
     @Test
     public void timeOldVsNew() throws Exception {
@@ -42,13 +58,14 @@ public class AeronNDArraySerdeTest {
         long oldTotal = 0;
         long newTotal = 0;
         INDArray arr = Nd4j.create(100000);
-        Nd4j.getCompressor().compressi(arr,"GZIP");
-        for(int i = 0; i < numTrials; i++) {
+        Nd4j.getCompressor().compressi(arr, "GZIP");
+        for (int i = 0; i < numTrials; i++) {
             StopWatch oldStopWatch = new StopWatch();
-            BufferedOutputStream bos = new BufferedOutputStream(new ByteArrayOutputStream(arr.length()));
+            // FIXME: int cast
+            BufferedOutputStream bos = new BufferedOutputStream(new ByteArrayOutputStream((int) arr.length()));
             DataOutputStream dos = new DataOutputStream(bos);
             oldStopWatch.start();
-            Nd4j.write(arr,dos);
+            Nd4j.write(arr, dos);
             oldStopWatch.stop();
             // System.out.println("Old " + oldStopWatch.getNanoTime());
             oldTotal += oldStopWatch.getNanoTime();

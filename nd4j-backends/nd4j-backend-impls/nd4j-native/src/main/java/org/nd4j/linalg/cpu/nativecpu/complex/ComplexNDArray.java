@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -43,9 +43,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class ComplexNDArray extends BaseComplexNDArray {
-	
-	public void close() {
-	}
+
+    public void close() {}
 
 
     /**
@@ -59,7 +58,7 @@ public class ComplexNDArray extends BaseComplexNDArray {
         super(data, shape, ordering);
     }
 
-    public ComplexNDArray(int[] shape, int offset, char ordering) {
+    public ComplexNDArray(int[] shape, long offset, char ordering) {
         super(shape, offset, ordering);
     }
 
@@ -220,11 +219,11 @@ public class ComplexNDArray extends BaseComplexNDArray {
      * @param offset   the offset
      * @param ordering the ordering
      */
-    public ComplexNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+    public ComplexNDArray(float[] data, int[] shape, int[] stride, long offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
 
-    public ComplexNDArray(float[] data, int[] shape, int[] stride, int offset) {
+    public ComplexNDArray(float[] data, int[] shape, int[] stride, long offset) {
         super(data, shape, stride, offset);
     }
 
@@ -232,11 +231,11 @@ public class ComplexNDArray extends BaseComplexNDArray {
         super(data, shape);
     }
 
-    public ComplexNDArray(float[] data, int[] shape, int offset, char ordering) {
+    public ComplexNDArray(float[] data, int[] shape, long offset, char ordering) {
         super(data, shape, offset, ordering);
     }
 
-    public ComplexNDArray(float[] data, int[] shape, int offset) {
+    public ComplexNDArray(float[] data, int[] shape, long offset) {
         super(data, shape, offset);
     }
 
@@ -248,7 +247,7 @@ public class ComplexNDArray extends BaseComplexNDArray {
      * @param stride the stride of the ndarray
      * @param offset the desired offset
      */
-    public ComplexNDArray(int[] shape, int[] stride, int offset) {
+    public ComplexNDArray(int[] shape, int[] stride, long offset) {
         super(shape, stride, offset);
     }
 
@@ -261,7 +260,7 @@ public class ComplexNDArray extends BaseComplexNDArray {
      * @param offset   the desired offset
      * @param ordering the ordering for the ndarray
      */
-    public ComplexNDArray(int[] shape, int[] stride, int offset, char ordering) {
+    public ComplexNDArray(int[] shape, int[] stride, long offset, char ordering) {
         super(shape, stride, offset, ordering);
     }
 
@@ -292,7 +291,7 @@ public class ComplexNDArray extends BaseComplexNDArray {
      * @param shape
      * @param offset
      */
-    public ComplexNDArray(int[] shape, int offset) {
+    public ComplexNDArray(int[] shape, long offset) {
         super(shape, offset);
     }
 
@@ -330,15 +329,15 @@ public class ComplexNDArray extends BaseComplexNDArray {
         super(data);
     }
 
-    public ComplexNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
+    public ComplexNDArray(DataBuffer data, int[] shape, int[] stride, long offset) {
         super(data, shape, stride, offset);
     }
 
-    public ComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, int offset, char ordering) {
+    public ComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, long offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
 
-    public ComplexNDArray(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering) {
+    public ComplexNDArray(DataBuffer data, int[] newDims, int[] newStrides, long offset, char ordering) {
         super(data, newDims, newStrides, offset, ordering);
     }
 
@@ -356,6 +355,11 @@ public class ComplexNDArray extends BaseComplexNDArray {
 
     @Override
     public INDArray unsafeDuplication() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public INDArray unsafeDuplication(boolean blocking) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 }

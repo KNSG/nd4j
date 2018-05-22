@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -25,6 +25,13 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
  * Created by agibsonccc on 10/8/14.
  */
 public class LessThanOrEqual extends BaseCondition {
+
+    /**
+     * Special constructor for pairwise boolean operations.
+     */
+    public LessThanOrEqual() {
+        super(0.0);
+    }
 
     public LessThanOrEqual(Number value) {
         super(value);

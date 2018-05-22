@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.aggregates.impl;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,8 +32,12 @@ public class AggregateCBOW extends BaseAggregate {
      * @param numLabels
      * @param trainWords
      */
-    public AggregateCBOW(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int wordIdx, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize, int numLabels, boolean trainWords, INDArray inferenceVector) {
-        this(syn0, syn1, syn1Neg, expTable, negTable, wordIdx, idxSyn0, idxSyn1, codes, negativeRounds, ngStarter, vectorLength, alpha, nextRandom, vocabSize);
+    public AggregateCBOW(@NonNull INDArray syn0, INDArray syn1, INDArray syn1Neg, @NonNull INDArray expTable,
+                    INDArray negTable, int wordIdx, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds,
+                    int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize, int numLabels,
+                    boolean trainWords, INDArray inferenceVector) {
+        this(syn0, syn1, syn1Neg, expTable, negTable, wordIdx, idxSyn0, idxSyn1, codes, negativeRounds, ngStarter,
+                        vectorLength, alpha, nextRandom, vocabSize);
 
         indexingArguments.set(9, numLabels);
         indexingArguments.set(10, trainWords ? 1 : 0);
@@ -59,14 +64,18 @@ public class AggregateCBOW extends BaseAggregate {
      * @param nextRandom
      * @param vocabSize
      */
-    public AggregateCBOW(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int wordIdx, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
+    public AggregateCBOW(@NonNull INDArray syn0, INDArray syn1, INDArray syn1Neg, @NonNull INDArray expTable,
+                    INDArray negTable, int wordIdx, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds,
+                    int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
         indexingArguments.add(vectorLength);
         indexingArguments.add(idxSyn1.length);
         indexingArguments.add(negativeRounds);
-        indexingArguments.add(expTable.length());
+
+        // FIXME: int cast
+        indexingArguments.add((int) expTable.length());
         indexingArguments.add(vocabSize);
         indexingArguments.add(ngStarter);
-        indexingArguments.add(negTable == null ? 0 : negTable.length());
+        indexingArguments.add(negTable == null ? 0 : (int) negTable.length());
         indexingArguments.add(idxSyn0.length);
         indexingArguments.add(wordIdx);
         indexingArguments.add(0); // number of labels. 0 by default

@@ -1,5 +1,6 @@
 package org.nd4j.jita.allocator.context.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.context.ContextPack;
@@ -8,17 +9,20 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.CUcontext;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
+
+import static org.bytedeco.javacpp.cublas.cublasContext;
+import static org.bytedeco.javacpp.cublas.cublasCreate_v2;
+import static org.bytedeco.javacpp.cusolver.cusolverDnContext;
+import static org.bytedeco.javacpp.cusolver.cusolverDnCreate;
 
 /**
  * This is context pool implementation, addressing shared cublas allocations together with shared stream pools
@@ -29,6 +33,7 @@ import java.util.concurrent.Semaphore;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class BasicContextPool implements ContextPool {
     // TODO: number of max threads should be device-dependant
     protected static final int MAX_STREAMS_PER_DEVICE = Integer.MAX_VALUE - 1;
@@ -36,14 +41,13 @@ public class BasicContextPool implements ContextPool {
     protected volatile Map<Integer, CUcontext> cuPool = new ConcurrentHashMap<>();
 
     protected volatile Map<Integer, cublasHandle_t> cublasPool = new ConcurrentHashMap<>();
+    protected volatile Map<Integer, cusolverDnHandle_t> solverPool = new ConcurrentHashMap<>();
 
     protected volatile Map<Long, CudaContext> contextsPool = new ConcurrentHashMap<>();
 
     protected volatile Map<Integer, Map<Integer, CudaContext>> contextsForDevices = new ConcurrentHashMap<>();
 
     protected Semaphore lock = new Semaphore(1);
-
-    protected static Logger logger = LoggerFactory.getLogger(BasicContextPool.class);
 
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
@@ -73,31 +77,31 @@ public class BasicContextPool implements ContextPool {
                 // this is lockable thing, but since it locks once per thread initialization, performance impact won't be big
                 lock.acquire();
                 // we create 1 CUcontext per device, which will be shared for all threads/streams on this device
-/*
+                /*
                 if (!cuPool.containsKey(deviceId)) {
                     CUcontext cuContext = createNewContext(deviceId);
                     cuPool.put(deviceId, cuContext);
                 }
-
+                
                 int result = JCudaDriver.cuCtxSetCurrent(cuPool.get(deviceId));
                 if (result != CUresult.CUDA_SUCCESS) {
                     throw new RuntimeException("Failed to set context on assigner");
                 }
-*/
+                */
                 if (!contextsForDevices.containsKey(deviceId)) {
                     contextsForDevices.put(deviceId, new ConcurrentHashMap<Integer, CudaContext>());
                 }
 
                 // if we hadn't hit MAX_STREAMS_PER_DEVICE limit - we add new stream. Otherwise we use random one.
                 if (contextsForDevices.get(deviceId).size() < MAX_STREAMS_PER_DEVICE) {
-                    logger.debug("Creating new context...");
+                    log.debug("Creating new context...");
                     CudaContext context = createNewStream(deviceId);
 
                     getDeviceBuffers(context, deviceId);
 
                     if (contextsForDevices.get(deviceId).size() == 0) {
                         // if we have no contexts created - it's just awesome time to attach cuBLAS handle here
-                        logger.debug("Creating new cuBLAS handle for device [{}]...", deviceId);
+                        log.debug("Creating new cuBLAS handle for device [{}]...", deviceId);
 
                         cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
@@ -106,16 +110,31 @@ public class BasicContextPool implements ContextPool {
                         context.setCublasStream(cublasStream);
 
                         cublasPool.put(deviceId, handle);
+
+                        log.debug("Creating new cuSolver handle for device [{}]...", deviceId);
+
+                        cudaStream_t solverStream = createNewStream(deviceId).getOldStream();
+
+                        cusolverDnHandle_t solverhandle = createNewSolverHandle(solverStream);
+                        context.setSolverHandle(solverhandle);
+                        context.setSolverStream(solverStream);
+
+                        solverPool.put(deviceId, solverhandle);
+
                     } else {
                         // just pick handle out there
-                        logger.debug("Reusing blas here...");
+                        log.debug("Reusing blas here...");
                         cublasHandle_t handle = cublasPool.get(deviceId);
                         context.setHandle(handle);
 
+                        log.debug("Reusing solver here...");
+                        cusolverDnHandle_t solverHandle = solverPool.get(deviceId);
+                        context.setSolverHandle(solverHandle);
+
                         // TODO: actually we don't need this anymore
-//                        cudaStream_t cublasStream = new cudaStream_t();
-                  //      JCublas2.cublasGetStream(handle, cublasStream);
-  //                      context.setCublasStream(cublasStream);
+                        //                        cudaStream_t cublasStream = new cudaStream_t();
+                        //      JCublas2.cublasGetStream(handle, cublasStream);
+                        //                      context.setCublasStream(cublasStream);
                     }
 
                     // we need this sync to finish memset
@@ -127,7 +146,7 @@ public class BasicContextPool implements ContextPool {
                     return context;
                 } else {
                     Integer rand = RandomUtils.nextInt(0, MAX_STREAMS_PER_DEVICE);
-                    logger.debug("Reusing context: " + rand);
+                    log.debug("Reusing context: " + rand);
 
                     nativeOps.setDevice(new CudaPointer(deviceId));
 
@@ -148,7 +167,7 @@ public class BasicContextPool implements ContextPool {
     }
 
     protected CudaContext createNewStream(Integer deviceId) {
-        logger.debug("Creating new stream for thread: [{}], device: [{}]...", Thread.currentThread().getId(), deviceId);
+        log.debug("Creating new stream for thread: [{}], device: [{}]...", Thread.currentThread().getId(), deviceId);
         //JCuda.cudaSetDevice(deviceId);
         nativeOps.setDevice(new CudaPointer(deviceId));
 
@@ -163,9 +182,11 @@ public class BasicContextPool implements ContextPool {
     }
 
     protected cublasHandle_t createNewCublasHandle() {
-        Pointer pointer = nativeOps.createBlasHandle();
-        if (pointer == null)
-            throw new IllegalStateException("Can't create new cuBLAS handle!");
+        cublasContext pointer = new cublasContext();
+        int result = cublasCreate_v2(pointer);
+        if (result != 0) {
+            throw new IllegalStateException("Can't create new cuBLAS handle! cuBLAS errorCode: [" + result + "]");
+        }
 
         cublasHandle_t handle = new cublasHandle_t(pointer);
 
@@ -174,30 +195,45 @@ public class BasicContextPool implements ContextPool {
 
 
     protected cublasHandle_t createNewCublasHandle(cudaStream_t stream) {
-        cublasHandle_t handle = new cublasHandle_t(nativeOps.createBlasHandle());
+        return createNewCublasHandle();
+    }
+
+    protected cusolverDnHandle_t createNewSolverHandle() {
+        cusolverDnContext pointer = new cusolverDnContext();
+        int result = cusolverDnCreate(pointer);
+        if (result != 0) {
+            throw new IllegalStateException("Can't create new cuBLAS handle! cusolverDn errorCode: [" + result
+                            + "] from cusolverDnCreate()");
+        }
+
+        cusolverDnHandle_t handle = new cusolverDnHandle_t(pointer);
 
         return handle;
     }
 
+    protected cusolverDnHandle_t createNewSolverHandle(cudaStream_t stream) {
+        return createNewSolverHandle();
+    }
+
     protected CUcontext createNewContext(Integer deviceId) {
         /*
-        logger.debug("Creating new CUcontext...");
+        log.debug("Creating new CUcontext...");
         CUdevice device = new CUdevice();
         CUcontext context = new CUcontext();
-
+        
         //JCuda.cudaSetDevice(deviceId);
-
-
+        
+        
         int result = cuDeviceGet(device, deviceId);
         if (result != CUresult.CUDA_SUCCESS) {
             throw new RuntimeException("Failed to setDevice on driver");
         }
-
+        
         result = cuCtxCreate(context, 0, device);
         if (result != CUresult.CUDA_SUCCESS) {
             throw new RuntimeException("Failed to create context on driver");
         }
-
+        
         return context;
         */
         return null;
@@ -211,15 +247,17 @@ public class BasicContextPool implements ContextPool {
     public synchronized void resetPool(int deviceId) {
         /*
         for (CUcontext cuContext: cuPool.values()) {
-            logger.debug("Destroying context: " + cuContext);
+            log.debug("Destroying context: " + cuContext);
             JCudaDriver.cuCtxDestroy(cuContext);
         }
-
+        
         cuPool.clear();
         contextsForDevices.clear();
         contextsPool.clear();
         cublasPool.clear();
-
+        
+        solverPool.clear();
+        
         acquireContextForDevice(deviceId);
         */
     }
@@ -239,7 +277,7 @@ public class BasicContextPool implements ContextPool {
         // we hardcode sizeOf to sizeOf(double)
         int sizeOf = 8;
 
-        Pointer  reductionPointer = nativeOps.mallocDevice(16385 * sizeOf * 2, new CudaPointer(deviceId), 0);
+        Pointer reductionPointer = nativeOps.mallocDevice(16385 * sizeOf * 2, new CudaPointer(deviceId), 0);
         if (reductionPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
@@ -247,11 +285,11 @@ public class BasicContextPool implements ContextPool {
 
         context.syncOldStream();
 
-        Pointer  allocationPointer = nativeOps.mallocDevice(1024 * 1024, new CudaPointer(deviceId), 0);
+        Pointer allocationPointer = nativeOps.mallocDevice(1024 * 1024, new CudaPointer(deviceId), 0);
         if (allocationPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
 
-        Pointer  scalarPointer = nativeOps.mallocHost(1 * sizeOf, 0);
+        Pointer scalarPointer = nativeOps.mallocHost(1 * sizeOf, 0);
         if (scalarPointer == null)
             throw new IllegalStateException("Can't allocate [HOST] scalar buffer memory!");
 
@@ -259,7 +297,7 @@ public class BasicContextPool implements ContextPool {
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 
-        Pointer  specialPointer = nativeOps.mallocDevice(1024 * 1024 * sizeOf, new CudaPointer(deviceId), 0);
+        Pointer specialPointer = nativeOps.mallocDevice(1024 * 1024 * sizeOf, new CudaPointer(deviceId), 0);
         if (specialPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] special buffer memory!");
 

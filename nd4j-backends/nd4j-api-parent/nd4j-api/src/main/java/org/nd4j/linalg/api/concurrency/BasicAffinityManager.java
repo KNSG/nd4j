@@ -33,6 +33,11 @@ public abstract class BasicAffinityManager implements AffinityManager {
     }
 
     @Override
+    public Integer getDeviceForArray(INDArray array) {
+        return 0;
+    }
+
+    @Override
     public int getNumberOfDevices() {
         return 1;
     }
@@ -59,5 +64,40 @@ public abstract class BasicAffinityManager implements AffinityManager {
     @Override
     public DataBuffer replicateToDevice(Integer deviceId, DataBuffer buffer) {
         return null;
+    }
+
+    @Override
+    public void tagLocation(INDArray array, Location location) {
+        // no-op
+    }
+
+    @Override
+    public void tagLocation(DataBuffer buffer, Location location) {
+        // no-op
+    }
+
+    @Override
+    public void unsafeSetDevice(Integer deviceId) {
+        // no-op
+    }
+
+    @Override
+    public void ensureLocation(INDArray array, Location location) {
+        // no-op
+    }
+
+    @Override
+    public boolean isCrossDeviceAccessSupported() {
+        return true;
+    }
+
+    @Override
+    public void allowCrossDeviceAccess(boolean reallyAllow) {
+        // no-op
+    }
+
+    @Override
+    public Location getActiveLocation(INDArray array) {
+        return Location.EVERYWHERE;
     }
 }

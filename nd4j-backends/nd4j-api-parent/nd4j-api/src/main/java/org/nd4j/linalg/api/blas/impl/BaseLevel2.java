@@ -8,6 +8,11 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.OpProfiler;
 
 /**
  * Base class for level 2 functions, abstract headers pulled from:
@@ -33,33 +38,30 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void gemv(char order, char transA, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-        GemvParameters parameters = new GemvParameters(A,X,Y);
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dgemv(order
-                    , parameters.getAOrdering()
-                    , parameters.getM()
-                    , parameters.getN()
-                    , alpha
-                    , parameters.getA()
-                    , parameters.getLda()
-                    , parameters.getX()
-                    , parameters.getIncx()
-                    , beta
-                    , parameters.getY()
-                    , parameters.getIncy());
-        else
-            sgemv(order
-                    , parameters.getAOrdering()
-                    , parameters.getM()
-                    , parameters.getN()
-                    , (float) alpha
-                    , parameters.getA()
-                    ,parameters.getLda()
-                    , parameters.getX()
-                    , parameters.getIncx()
-                    , (float) beta
-                    , parameters.getY()
-                    , parameters.getIncy());
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
+
+        if (A.isSparse() && !X.isSparse()) {
+            Nd4j.getSparseBlasWrapper().level2().gemv(order, transA, alpha, A, X, beta, Y);
+            return;
+        }
+
+        GemvParameters parameters = new GemvParameters(A, X, Y);
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, parameters.getA(), parameters.getX(),
+                            parameters.getY());
+            dgemv(order, parameters.getAOrdering(), parameters.getM(), parameters.getN(), alpha, parameters.getA(),
+                            parameters.getLda(), parameters.getX(), parameters.getIncx(), beta, parameters.getY(),
+                            parameters.getIncy());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, parameters.getA(), parameters.getX(),
+                            parameters.getY());
+            sgemv(order, parameters.getAOrdering(), parameters.getM(), parameters.getN(), (float) alpha,
+                            parameters.getA(), parameters.getLda(), parameters.getX(), parameters.getIncx(),
+                            (float) beta, parameters.getY(), parameters.getIncy());
+        }
+
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -78,36 +80,19 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      * @param Y
      */
     @Override
-    public void gemv(char order, char transA, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
-        GemvParameters parameters = new GemvParameters(A,X,Y);
+    public void gemv(char order, char transA, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X,
+                    IComplexNumber beta, IComplexNDArray Y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zgemv(
-                    order
-                    , transA
-                    , parameters.getM()
-                    , parameters.getN()
-                    , alpha.asDouble()
-                    , A
-                    , parameters.getLda()
-                    , X
-                    , parameters.getIncx()
-                    , beta.asDouble()
-                    , Y
-                    , parameters.getIncy());
+        GemvParameters parameters = new GemvParameters(A, X, Y);
+
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            zgemv(order, transA, parameters.getM(), parameters.getN(), alpha.asDouble(), A, parameters.getLda(), X,
+                            parameters.getIncx(), beta.asDouble(), Y, parameters.getIncy());
         else
-            cgemv(order
-                    , transA
-                    ,parameters.getM()
-                    , parameters.getN()
-                    , alpha.asFloat()
-                    , A
-                    , parameters.getLda()
-                    , X
-                    , parameters.getIncx()
-                    , beta.asFloat()
-                    , Y
-                    , parameters.getIncy());
+            cgemv(order, transA, parameters.getM(), parameters.getN(), alpha.asFloat(), A, parameters.getLda(), X,
+                            parameters.getIncx(), beta.asFloat(), Y, parameters.getIncy());
 
     }
 
@@ -129,12 +114,23 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      * @param Y
      */
     @Override
-    public void gbmv(char order, char TransA, int KL, int KU, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dgbmv(order, TransA, A.rows(), A.columns(), KL, KU, alpha, A, A.size(0), X, X.majorStride(), beta, Y, Y.majorStride());
-        else
-            sgbmv(order, TransA, A.rows(), A.columns(), KL, KU, (float) alpha, A, A.size(0), X, X.majorStride(), (float) beta, Y, Y.majorStride());
+    public void gbmv(char order, char TransA, int KL, int KU, double alpha, INDArray A, INDArray X, double beta,
+                    INDArray Y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
+        // FIXME: int cast
+
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
+            dgbmv(order, TransA, (int) A.rows(), (int) A.columns(), KL, KU, alpha, A, (int) A.size(0), X, X.majorStride(), beta, Y,
+                            Y.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
+            sgbmv(order, TransA, (int) A.rows(), (int) A.columns(), KL, KU, (float) alpha, A, (int) A.size(0), X, X.majorStride(), (float) beta, Y, Y.majorStride());
+        }
+
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -155,11 +151,18 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      * @param Y
      */
     @Override
-    public void gbmv(char order, char TransA, int KL, int KU, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zgbmv(order, TransA, A.rows(), A.columns(), KL, KU, alpha.asDouble(), A, A.size(0), X, X.majorStride() / 2, beta.asDouble(), Y, Y.majorStride() / 2);
-        else
-            cgbmv(order, TransA, A.rows(), A.columns(), KL, KU, alpha.asFloat(), A, A.size(0), X, X.majorStride() / 2, beta.asFloat(), Y, Y.majorStride() / 2);
+    public void gbmv(char order, char TransA, int KL, int KU, IComplexNumber alpha, IComplexNDArray A,
+                    IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
+
+        // FIXME: int cast
+
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            zgbmv(order, TransA, (int) A.rows(), (int) A.columns(), KL, KU, alpha.asDouble(), A, (int) A.size(0), X, X.majorStride() / 2,
+                            beta.asDouble(), Y, Y.majorStride() / 2);
+        } else {
+            cgbmv(order, TransA, (int) A.rows(), (int) A.columns(), KL, KU, alpha.asFloat(), A, (int) A.size(0), X, X.majorStride() / 2,
+                            beta.asFloat(), Y, Y.majorStride() / 2);
+        }
 
     }
 
@@ -175,11 +178,20 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void ger(char order, double alpha, INDArray X, INDArray Y, INDArray A) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dger(order,A.rows(),A.columns(),alpha,X,X.majorStride(),Y,Y.majorStride(),A,A.size(0));
-        else
-            sger(order,A.rows(),A.columns(),(float) alpha,X,X.majorStride(),Y,Y.majorStride(),A,A.size(0));
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
+            dger(order, (int) A.rows(), (int) A.columns(), alpha, X, X.majorStride(), Y, Y.majorStride(), A, (int) A.size(0));
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
+            sger(order, (int) A.rows(), (int) A.columns(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A, (int) A.size(0));
+        }
+
+        OpExecutionerUtil.checkForAny(A);
     }
 
 
@@ -194,10 +206,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void geru(char order, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y, IComplexNDArray A) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            zgeru(order,A.rows(),A.columns(),alpha.asDouble(),X,X.majorStride() / 2,Y,Y.majorStride() / 2,A,A.size(0));
+        // FIXME: int cast
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE)
+            zgeru(order, (int) A.rows(), (int) A.columns(), alpha.asDouble(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, A,
+                    (int) A.size(0));
         else
-            cgeru(order, A.rows(), A.columns(), alpha.asFloat(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, A, A.size(0));
+            cgeru(order, (int) A.rows(),(int)  A.columns(), alpha.asFloat(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, A,
+                    (int)  A.size(0));
 
     }
 
@@ -214,11 +229,16 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      * @param Y
      */
     @Override
-    public void hbmv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zhbmv(order,Uplo,X.length(),A.columns(),alpha.asDouble(),A,A.size(0),X,X.majorStride() / 2,beta.asDouble(),Y,Y.majorStride() / 2);
+    public void hbmv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X,
+                    IComplexNumber beta, IComplexNDArray Y) {
+
+        // FIXME: int cast
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            zhbmv(order, Uplo, (int) X.length(), (int) A.columns(), alpha.asDouble(), A, (int) A.size(0), X, X.majorStride() / 2,
+                            beta.asDouble(), Y, Y.majorStride() / 2);
         else
-            chbmv(order, Uplo, X.length(), A.columns(), alpha.asFloat(), A, A.size(0), X, X.majorStride() / 2, beta.asFloat(), Y, Y.majorStride() / 2);
+            chbmv(order, Uplo, (int) X.length(), (int) A.columns(), alpha.asFloat(), A, (int) A.size(0), X, X.majorStride() / 2,
+                            beta.asFloat(), Y, Y.majorStride() / 2);
 
     }
 
@@ -236,11 +256,17 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      * @param Y
      */
     @Override
-    public void hemv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zhemv(order,Uplo,A.rows(),alpha.asDouble(),A,A.size(0),X,X.majorStride() / 2,beta.asDouble(),Y,Y.majorStride() / 2);
+    public void hemv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X,
+                    IComplexNumber beta, IComplexNDArray Y) {
+
+        // FIXME: int cast
+
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            zhemv(order, Uplo, (int) A.rows(), alpha.asDouble(), A, (int) A.size(0), X, X.majorStride() / 2, beta.asDouble(), Y,
+                            Y.majorStride() / 2);
         else
-            chemv(order, Uplo, A.rows(), alpha.asFloat(), A, A.size(0), X, X.majorStride() / 2, beta.asFloat(), Y, Y.majorStride() / 2);
+            chemv(order, Uplo, (int) A.rows(), alpha.asFloat(), A, (int) A.size(0), X, X.majorStride() / 2, beta.asFloat(), Y,
+                            Y.majorStride() / 2);
 
     }
 
@@ -256,11 +282,15 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      * @param A
      */
     @Override
-    public void her2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y, IComplexNDArray A) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            zher2(order,Uplo,A.rows(),alpha.asDouble(),X,X.majorStride() / 2,Y,Y.majorStride() / 2,A,A.size(0));
+    public void her2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y,
+                    IComplexNDArray A) {
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE)
+            zher2(order, Uplo, (int) A.rows(), alpha.asDouble(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, A,
+                    (int) A.size(0));
         else
-            cher2(order, Uplo, A.rows(), alpha.asFloat(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, A, A.size(0));
+            cher2(order, Uplo, (int) A.rows(), alpha.asFloat(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, A, (int) A.size(0));
 
     }
 
@@ -279,11 +309,16 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      * @param Y
      */
     @Override
-    public void hpmv(char order, char Uplo, int N, IComplexNumber alpha, IComplexNDArray Ap, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
-        if(Ap.data().dataType() == DataBuffer.Type.DOUBLE)
-            zhpmv(order,Uplo, Ap.rows(),alpha.asDouble(),Ap,X,X.majorStride() / 2,beta.asDouble(),Y,Y.majorStride() / 2);
+    public void hpmv(char order, char Uplo, int N, IComplexNumber alpha, IComplexNDArray Ap, IComplexNDArray X,
+                    IComplexNumber beta, IComplexNDArray Y) {
+        // FIXME: int cast
+
+        if (Ap.data().dataType() == DataBuffer.Type.DOUBLE)
+            zhpmv(order, Uplo, (int) Ap.rows(), alpha.asDouble(), Ap, X, X.majorStride() / 2, beta.asDouble(), Y,
+                            Y.majorStride() / 2);
         else
-            chpmv(order, Uplo, Ap.rows(), alpha.asFloat(), Ap, X, X.majorStride() / 2, beta.asFloat(), Y, Y.majorStride() / 2);
+            chpmv(order, Uplo, (int) Ap.rows(), alpha.asFloat(), Ap, X, X.majorStride() / 2, beta.asFloat(), Y,
+                            Y.majorStride() / 2);
 
     }
 
@@ -299,11 +334,15 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      * @param Ap
      */
     @Override
-    public void hpr2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y, IComplexNDArray Ap) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            zhpr2(order,Uplo,Ap.rows(),alpha.asDouble(),X,X.majorStride() / 2,Y,Y.majorStride() / 2,Ap);
+    public void hpr2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y,
+                    IComplexNDArray Ap) {
+
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE)
+            zhpr2(order, Uplo, (int) Ap.rows(), alpha.asDouble(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, Ap);
         else
-            chpr2(order, Uplo, Ap.rows(), alpha.asFloat(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, Ap);
+            chpr2(order, Uplo, (int) Ap.rows(), alpha.asFloat(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, Ap);
 
     }
 
@@ -322,11 +361,22 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void sbmv(char order, char Uplo, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dsbmv(order,Uplo,X.length(),A.columns(),alpha,A,A.size(0),X,X.majorStride(),beta,Y,Y.majorStride());
-        else
-            ssbmv(order, Uplo, X.length(), A.columns(), (float) alpha, A, A.size(0), X, X.majorStride(), (float) beta, Y, Y.majorStride());
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
+            dsbmv(order, Uplo, (int) X.length(), (int) A.columns(), alpha, A, (int) A.size(0), X, X.majorStride(), beta, Y,
+                    (int) Y.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
+            ssbmv(order, Uplo, (int) X.length(), (int) A.columns(), (float) alpha, A, (int) A.size(0), X, X.majorStride(), (float) beta,
+                            Y, Y.majorStride());
+        }
+
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -340,11 +390,20 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spmv(char order, char Uplo, double alpha, INDArray Ap, INDArray X, double beta, INDArray Y) {
-        if(Ap.data().dataType() == DataBuffer.Type.DOUBLE)
-            dspmv(order,Uplo,X.length(),alpha,Ap,X, Ap.majorStride(),beta,Y,Y.majorStride());
-        else
-            sspmv(order, Uplo, X.length(), (float) alpha, Ap, X, Ap.majorStride(), (float) beta, Y, Y.majorStride());
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, Ap, X, Y);
 
+        // FIXME: int cast
+
+        if (Ap.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Y);
+            dspmv(order, Uplo, (int) X.length(), alpha, Ap, X, Ap.majorStride(), beta, Y, Y.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X, Y);
+            sspmv(order, Uplo, (int) X.length(), (float) alpha, Ap, X, Ap.majorStride(), (float) beta, Y, Y.majorStride());
+        }
+
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -359,11 +418,21 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spr(char order, char Uplo, double alpha, INDArray X, INDArray Ap) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dspr(order,Uplo,X.length(),alpha,X,X.majorStride(),Ap);
-        else
-            sspr(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), Ap);
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, Ap, X);
 
+
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X);
+            dspr(order, Uplo, (int) X.length(), alpha, X, X.majorStride(), Ap);
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X);
+            sspr(order, Uplo, (int) X.length(), (float) alpha, X, X.majorStride(), Ap);
+        }
+
+        OpExecutionerUtil.checkForAny(Ap);
     }
 
     /**
@@ -379,11 +448,20 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spr2(char order, char Uplo, double alpha, INDArray X, INDArray Y, INDArray A) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dspr2(order,Uplo,X.length(),alpha,X,X.majorStride(),Y,Y.majorStride(),A);
-        else
-            sspr2(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A);
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
+        // FIXME int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
+            dspr2(order, Uplo, (int) X.length(), alpha, X, X.majorStride(), Y, Y.majorStride(), A);
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
+            sspr2(order, Uplo, (int) X.length(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A);
+        }
+
+        OpExecutionerUtil.checkForAny(A);
     }
 
     /**
@@ -401,11 +479,21 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void symv(char order, char Uplo, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dsymv(order,Uplo,X.length(),alpha,A,A.size(0),X,X.majorStride(),beta,Y,Y.majorStride());
-        else
-            ssymv(order, Uplo, X.length(), (float) alpha, A, A.size(0), X, X.majorStride(), (float) beta, Y, Y.majorStride());
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
+            dsymv(order, Uplo, (int) X.length(), alpha, A, (int) A.size(0), X, X.majorStride(), beta, Y, Y.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
+            ssymv(order, Uplo, (int) X.length(), (float) alpha, A, (int) A.size(0), X, X.majorStride(), (float) beta, Y,
+                            Y.majorStride());
+        }
+
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -421,11 +509,20 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void syr(char order, char Uplo, int N, double alpha, INDArray X, INDArray A) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dsyr(order,Uplo,X.length(),alpha,X,X.majorStride(),A,A.size(0));
-        else
-            ssyr(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), A, A.size(0));
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X);
 
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
+            dsyr(order, Uplo, (int) X.length(), alpha, X, X.majorStride(), A, (int) A.size(0));
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
+            ssyr(order, Uplo, (int) X.length(), (float) alpha, X, X.majorStride(), A, (int) A.size(0));
+        }
+
+        OpExecutionerUtil.checkForAny(A);
     }
 
     /**
@@ -438,11 +535,20 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void syr2(char order, char Uplo, double alpha, INDArray X, INDArray Y, INDArray A) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dsyr2(order,Uplo,X.length(),alpha,X,X.majorStride(),Y,Y.majorStride(),A,A.size(0));
-        else
-            ssyr2(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A, A.size(0));
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
+            dsyr2(order, Uplo, (int) X.length(), alpha, X, X.majorStride(), Y, Y.majorStride(), A, (int) A.size(0));
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
+            ssyr2(order, Uplo, (int) X.length(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A, (int) A.size(0));
+        }
+
+        OpExecutionerUtil.checkForAny(A);
     }
 
     /**
@@ -458,11 +564,18 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tbmv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtbmv(order,Uplo,TransA,Diag,X.length(),A.columns(),A,A.size(0),X,X.majorStride());
-        else
-            stbmv(order, Uplo, TransA, Diag, X.length(), A.columns(), A, A.size(0), X, X.majorStride());
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X);
 
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
+            dtbmv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
+            stbmv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.majorStride());
+        }
     }
 
     /**
@@ -477,10 +590,18 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tbsv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtbsv(order,Uplo,TransA,Diag,X.length(),A.columns(),A,A.size(0),X,X.majorStride());
-        else
-            stbsv(order, Uplo, TransA, Diag, X.length(), A.columns(), A, A.size(0), X, X.majorStride());
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X);
+
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
+            dtbsv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
+            stbsv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.majorStride());
+        }
 
     }
 
@@ -496,11 +617,20 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tpmv(char order, char Uplo, char TransA, char Diag, INDArray Ap, INDArray X) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtpmv(order,Uplo,TransA,Diag,Ap.length(),Ap,X,X.majorStride());
-        else
-            stpmv(order, Uplo, TransA, Diag, Ap.length(), Ap, X, X.majorStride());
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, Ap, X);
 
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X);
+            dtpmv(order, Uplo, TransA, Diag, (int) Ap.length(), Ap, X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X);
+            stpmv(order, Uplo, TransA, Diag, (int) Ap.length(), Ap, X, X.majorStride());
+        }
+
+        OpExecutionerUtil.checkForAny(X);
     }
 
     /**
@@ -515,11 +645,20 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tpsv(char order, char Uplo, char TransA, char Diag, INDArray Ap, INDArray X) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtpsv(order,Uplo,TransA,Diag,X.length(),Ap,X,X.majorStride());
-        else
-            stpsv(order, Uplo, TransA, Diag, X.length(), Ap, X, X.majorStride());
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, Ap, X);
 
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Ap);
+            dtpsv(order, Uplo, TransA, Diag, (int) X.length(), Ap, X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, Ap, X);
+            stpsv(order, Uplo, TransA, Diag, (int) X.length(), Ap, X, X.majorStride());
+        }
+
+        OpExecutionerUtil.checkForAny(X);
     }
 
     /**
@@ -534,11 +673,20 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void trmv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtrmv(order,Uplo,TransA,Diag,X.length(),A,A.size(0),X,X.majorStride());
-        else
-            strmv(order, Uplo, TransA, Diag, X.length(), A, A.size(0), X, X.majorStride());
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X);
 
+        // FIXME: int cast
+
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
+            dtrmv(order, Uplo, TransA, Diag, (int) X.length(), A, (int) A.size(0), X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
+            strmv(order, Uplo, TransA, Diag, (int) X.length(), A, (int) A.size(0), X, X.majorStride());
+        }
+
+        OpExecutionerUtil.checkForAny(X);
     }
 
     /**
@@ -553,281 +701,234 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void trsv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtrsv(order,Uplo,TransA,Diag,A.length(),A,A.size(0),X,X.majorStride());
-        else
-            strsv(order, Uplo, TransA, Diag, A.length(), A, A.size(0), X, X.majorStride());
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X);
 
+        // FIXME: int cast
+
+        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
+            dtrsv(order, Uplo, TransA, Diag, (int) A.length(), A, (int) A.size(0), X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
+            strsv(order, Uplo, TransA, Diag, (int) A.length(), A, (int) A.size(0), X, X.majorStride());
+        }
+
+        OpExecutionerUtil.checkForAny(X);
     }
 
-/*
- * ===========================================================================
- * Prototypes for level 2 BLAS
- * ===========================================================================
- */
+    /*
+     * ===========================================================================
+     * Prototypes for level 2 BLAS
+     * ===========================================================================
+     */
 
     /* 
      * Routines with standard 4 prefixes (S, D, C, Z)
      */
-    protected abstract void sgemv( char order,
-                                   char TransA,  int M,  int N,
-                                   float alpha,  INDArray A,  int lda,
-                                   INDArray X,  int incX,  float beta,
-                                   INDArray Y,  int incY);
-    protected abstract  void sgbmv( char order,
-                                    char TransA,  int M,  int N,
-                                    int KL,  int KU,  float alpha,
-                                    INDArray A,  int lda,  INDArray X,
-                                    int incX,  float beta, INDArray Y,  int incY);
-    protected abstract void strmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  INDArray A,  int lda,
-                                   INDArray X,  int incX);
-    protected abstract void stbmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  int K,  INDArray A,  int lda,
-                                   INDArray X,  int incX);
-    protected abstract void stpmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  INDArray Ap, INDArray X,  int incX);
-    protected abstract void strsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  INDArray A,  int lda, INDArray X,
-                                   int incX);
-    protected abstract void stbsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  int K,  INDArray A,  int lda,
-                                   INDArray X,  int incX);
-    protected abstract void stpsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  INDArray Ap, INDArray X,  int incX);
+    protected abstract void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X,
+                    int incX, float beta, INDArray Y, int incY);
 
-    protected abstract void dgemv( char order,
-                                   char TransA,  int M,  int N,
-                                   double alpha,  INDArray A,  int lda,
-                                   INDArray X,  int incX,  double beta,
-                                   INDArray Y,  int incY);
-    protected abstract void dgbmv( char order,
-                                   char TransA,  int M,  int N,
-                                   int KL,  int KU,  double alpha,
-                                   INDArray A,  int lda,  INDArray X,
-                                   int incX,  double beta, INDArray Y,  int incY);
-    protected abstract void dtrmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  INDArray A,  int lda,
-                                   INDArray X,  int incX);
-    protected abstract void dtbmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  int K,  INDArray A,  int lda,
-                                   INDArray X,  int incX);
-    protected abstract void dtpmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  INDArray Ap, INDArray X,  int incX);
-    protected abstract void dtrsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  INDArray A,  int lda, INDArray X,
-                                   int incX);
-    protected abstract void dtbsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  int K,  INDArray A,  int lda,
-                                   INDArray X,  int incX);
-    protected abstract void dtpsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  INDArray Ap, INDArray X,  int incX);
+    protected abstract void sgbmv(char order, char TransA, int M, int N, int KL, int KU, float alpha, INDArray A,
+                    int lda, INDArray X, int incX, float beta, INDArray Y, int incY);
 
-    protected abstract void cgemv( char order,
-                                   char TransA,  int M,  int N,
-                                   IComplexFloat alpha,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray X,  int incX,  IComplexFloat beta,
-                                   IComplexNDArray Y,  int incY);
-    protected abstract void cgbmv( char order,
-                                   char TransA,  int M,  int N,
-                                   int KL,  int KU,  IComplexFloat alpha,
-                                   IComplexNDArray A,  int lda,  IComplexNDArray X,
-                                   int incX,  IComplexFloat beta, IComplexNDArray Y,  int incY);
-    protected abstract void ctrmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray X,  int incX);
-    protected abstract void ctbmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  int K,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray X,  int incX);
-    protected abstract void ctpmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  IComplexNDArray Ap, IComplexNDArray X,  int incX);
-    protected abstract void ctrsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  IComplexNDArray A,  int lda, IComplexNDArray X,
-                                   int incX);
-    protected abstract void ctbsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  int K,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray X,  int incX);
-    protected abstract void ctpsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  IComplexNDArray Ap, IComplexNDArray X,  int incX);
+    protected abstract void strmv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
+                    int incX);
 
-    protected abstract void zgemv( char order,
-                                   char TransA,  int M,  int N,
-                                   IComplexDouble alpha,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray X,  int incX,  IComplexDouble beta,
-                                   IComplexNDArray Y,  int incY);
-    protected abstract void zgbmv( char order,
-                                   char TransA,  int M,  int N,
-                                   int KL,  int KU,  IComplexDouble alpha,
-                                   IComplexNDArray A,  int lda,  IComplexNDArray X,
-                                   int incX,  IComplexDouble beta, IComplexNDArray Y,  int incY);
-    protected abstract void ztrmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray X,  int incX);
-    protected abstract void ztbmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  int K,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray X,  int incX);
-    protected abstract void ztpmv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  IComplexNDArray Ap, IComplexNDArray X,  int incX);
-    protected abstract void ztrsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  IComplexNDArray A,  int lda, IComplexNDArray X,
-                                   int incX);
-    protected abstract void ztbsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  int K,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray X,  int incX);
-    protected abstract void ztpsv( char order,  char Uplo,
-                                   char TransA,  char Diag,
-                                   int N,  IComplexNDArray Ap, IComplexNDArray X,  int incX);
+    protected abstract void stbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda,
+                    INDArray X, int incX);
+
+    protected abstract void stpmv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X,
+                    int incX);
+
+    protected abstract void strsv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
+                    int incX);
+
+    protected abstract void stbsv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda,
+                    INDArray X, int incX);
+
+    protected abstract void stpsv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X,
+                    int incX);
+
+    protected abstract void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X,
+                    int incX, double beta, INDArray Y, int incY);
+
+    protected abstract void dgbmv(char order, char TransA, int M, int N, int KL, int KU, double alpha, INDArray A,
+                    int lda, INDArray X, int incX, double beta, INDArray Y, int incY);
+
+    protected abstract void dtrmv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
+                    int incX);
+
+    protected abstract void dtbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda,
+                    INDArray X, int incX);
+
+    protected abstract void dtpmv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X,
+                    int incX);
+
+    protected abstract void dtrsv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
+                    int incX);
+
+    protected abstract void dtbsv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda,
+                    INDArray X, int incX);
+
+    protected abstract void dtpsv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X,
+                    int incX);
+
+    protected abstract void cgemv(char order, char TransA, int M, int N, IComplexFloat alpha, IComplexNDArray A,
+                    int lda, IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY);
+
+    protected abstract void cgbmv(char order, char TransA, int M, int N, int KL, int KU, IComplexFloat alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y,
+                    int incY);
+
+    protected abstract void ctrmv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray A, int lda,
+                    IComplexNDArray X, int incX);
+
+    protected abstract void ctbmv(char order, char Uplo, char TransA, char Diag, int N, int K, IComplexNDArray A,
+                    int lda, IComplexNDArray X, int incX);
+
+    protected abstract void ctpmv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray Ap,
+                    IComplexNDArray X, int incX);
+
+    protected abstract void ctrsv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray A, int lda,
+                    IComplexNDArray X, int incX);
+
+    protected abstract void ctbsv(char order, char Uplo, char TransA, char Diag, int N, int K, IComplexNDArray A,
+                    int lda, IComplexNDArray X, int incX);
+
+    protected abstract void ctpsv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray Ap,
+                    IComplexNDArray X, int incX);
+
+    protected abstract void zgemv(char order, char TransA, int M, int N, IComplexDouble alpha, IComplexNDArray A,
+                    int lda, IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY);
+
+    protected abstract void zgbmv(char order, char TransA, int M, int N, int KL, int KU, IComplexDouble alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y,
+                    int incY);
+
+    protected abstract void ztrmv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray A, int lda,
+                    IComplexNDArray X, int incX);
+
+    protected abstract void ztbmv(char order, char Uplo, char TransA, char Diag, int N, int K, IComplexNDArray A,
+                    int lda, IComplexNDArray X, int incX);
+
+    protected abstract void ztpmv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray Ap,
+                    IComplexNDArray X, int incX);
+
+    protected abstract void ztrsv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray A, int lda,
+                    IComplexNDArray X, int incX);
+
+    protected abstract void ztbsv(char order, char Uplo, char TransA, char Diag, int N, int K, IComplexNDArray A,
+                    int lda, IComplexNDArray X, int incX);
+
+    protected abstract void ztpsv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray Ap,
+                    IComplexNDArray X, int incX);
 
 
     /* 
      * Routines with S and D prefixes only
      */
-    protected abstract  void ssymv( char order,  char Uplo,
-                                    int N,  float alpha,  INDArray A,
-                                    int lda,  INDArray X,  int incX,
-                                    float beta, INDArray Y,  int incY);
-    protected abstract  void ssbmv( char order,  char Uplo,
-                                    int N,  int K,  float alpha,  INDArray A,
-                                    int lda,  INDArray X,  int incX,
-                                    float beta, INDArray Y,  int incY);
-    protected abstract  void sspmv( char order,  char Uplo,
-                                    int N,  float alpha,  INDArray Ap,
-                                    INDArray X,  int incX,
-                                    float beta, INDArray Y,  int incY);
-    protected abstract void sger( char order,  int M,  int N,
-                                  float alpha,  INDArray X,  int incX,
-                                  INDArray Y,  int incY, INDArray A,  int lda);
-    protected abstract void ssyr( char order,  char Uplo,
-                                  int N,  float alpha,  INDArray X,
-                                  int incX, INDArray A,  int lda);
-    protected abstract void sspr( char order,  char Uplo,
-                                  int N,  float alpha,  INDArray X,
-                                  int incX, INDArray Ap);
-    protected abstract void ssyr2( char order,  char Uplo,
-                                   int N,  float alpha,  INDArray X,
-                                   int incX,  INDArray Y,  int incY, INDArray A,
-                                   int lda);
-    protected abstract void sspr2( char order,  char Uplo,
-                                   int N,  float alpha,  INDArray X,
-                                   int incX,  INDArray Y,  int incY, INDArray A);
+    protected abstract void ssymv(char order, char Uplo, int N, float alpha, INDArray A, int lda, INDArray X, int incX,
+                    float beta, INDArray Y, int incY);
 
-    protected abstract void dsymv( char order,  char Uplo,
-                                   int N,  double alpha,  INDArray A,
-                                   int lda,  INDArray X,  int incX,
-                                   double beta, INDArray Y,  int incY);
-    protected abstract void dsbmv( char order,  char Uplo,
-                                   int N,  int K,  double alpha,  INDArray A,
-                                   int lda,  INDArray X,  int incX,
-                                   double beta, INDArray Y,  int incY);
-    protected abstract  void dspmv( char order,  char Uplo,
-                                    int N,  double alpha,  INDArray Ap,
-                                    INDArray X,  int incX,
-                                    double beta, INDArray Y,  int incY);
-    protected abstract void dger( char order,  int M,  int N,
-                                  double alpha,  INDArray X,  int incX,
-                                  INDArray Y,  int incY, INDArray A,  int lda);
-    protected abstract void dsyr( char order,  char Uplo,
-                                  int N,  double alpha,  INDArray X,
-                                  int incX, INDArray A,  int lda);
-    protected abstract void dspr( char order,  char Uplo,
-                                  int N,  double alpha,  INDArray X,
-                                  int incX, INDArray Ap);
-    protected abstract void dsyr2( char order,  char Uplo,
-                                   int N,  double alpha,  INDArray X,
-                                   int incX,  INDArray Y,  int incY, INDArray A,
-                                   int lda);
-    protected abstract void dspr2( char order,  char Uplo,
-                                   int N,  double alpha,  INDArray X,
-                                   int incX,  INDArray Y,  int incY, INDArray A);
+    protected abstract void ssbmv(char order, char Uplo, int N, int K, float alpha, INDArray A, int lda, INDArray X,
+                    int incX, float beta, INDArray Y, int incY);
+
+    protected abstract void sspmv(char order, char Uplo, int N, float alpha, INDArray Ap, INDArray X, int incX,
+                    float beta, INDArray Y, int incY);
+
+    protected abstract void sger(char order, int M, int N, float alpha, INDArray X, int incX, INDArray Y, int incY,
+                    INDArray A, int lda);
+
+    protected abstract void ssyr(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray A, int lda);
+
+    protected abstract void sspr(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Ap);
+
+    protected abstract void ssyr2(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Y, int incY,
+                    INDArray A, int lda);
+
+    protected abstract void sspr2(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Y, int incY,
+                    INDArray A);
+
+    protected abstract void dsymv(char order, char Uplo, int N, double alpha, INDArray A, int lda, INDArray X, int incX,
+                    double beta, INDArray Y, int incY);
+
+    protected abstract void dsbmv(char order, char Uplo, int N, int K, double alpha, INDArray A, int lda, INDArray X,
+                    int incX, double beta, INDArray Y, int incY);
+
+    protected abstract void dspmv(char order, char Uplo, int N, double alpha, INDArray Ap, INDArray X, int incX,
+                    double beta, INDArray Y, int incY);
+
+    protected abstract void dger(char order, int M, int N, double alpha, INDArray X, int incX, INDArray Y, int incY,
+                    INDArray A, int lda);
+
+    protected abstract void dsyr(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray A, int lda);
+
+    protected abstract void dspr(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Ap);
+
+    protected abstract void dsyr2(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Y,
+                    int incY, INDArray A, int lda);
+
+    protected abstract void dspr2(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Y,
+                    int incY, INDArray A);
 
 
     /* 
      * Routines with C and Z prefixes only
      */
-    protected abstract  void chemv( char order,  char Uplo,
-                                    int N,  IComplexFloat alpha,  IComplexNDArray A,
-                                    int lda,  IComplexNDArray X,  int incX,
-                                    IComplexFloat beta, IComplexNDArray Y,  int incY);
-    protected abstract void chbmv( char order,  char Uplo,
-                                   int N,  int K,  IComplexFloat alpha,  IComplexNDArray A,
-                                   int lda,  IComplexNDArray X,  int incX,
-                                   IComplexFloat beta, IComplexNDArray Y,  int incY);
-    protected abstract void chpmv( char order,  char Uplo,
-                                   int N,  IComplexFloat alpha,  IComplexNDArray Ap,
-                                   IComplexNDArray X,  int incX,
-                                   IComplexFloat beta, IComplexNDArray Y,  int incY);
-    protected abstract void cgeru( char order,  int M,  int N,
-                                   IComplexFloat alpha,  IComplexNDArray X,  int incX,
-                                   IComplexNDArray Y,  int incY, IComplexNDArray A,  int lda);
-    protected abstract void cgerc( char order,  int M,  int N,
-                                   IComplexFloat alpha,  IComplexNDArray X,  int incX,
-                                   IComplexNDArray Y,  int incY, IComplexNDArray A,  int lda);
-    protected abstract void cher( char order,  char Uplo,
-                                  int N,  float alpha,  IComplexNDArray X,  int incX,
-                                  IComplexNDArray A,  int lda);
-    protected abstract void chpr( char order,  char Uplo,
-                                  int N,  INDArray alpha,  IComplexNDArray X,
-                                  int incX, IComplexNDArray A);
-    protected abstract void cher2( char order,  char Uplo,  int N,
-                                   IComplexFloat alpha,  IComplexNDArray X,  int incX,
-                                   IComplexNDArray Y,  int incY, IComplexNDArray A,  int lda);
-    protected abstract void chpr2( char order,  char Uplo,  int N,
-                                   IComplexFloat alpha,  IComplexNDArray X,  int incX,
-                                   IComplexNDArray Y,  int incY, IComplexNDArray Ap);
+    protected abstract void chemv(char order, char Uplo, int N, IComplexFloat alpha, IComplexNDArray A, int lda,
+                    IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY);
 
-    protected abstract void zhemv( char order,  char Uplo,
-                                   int N,  IComplexDouble alpha,  IComplexNDArray A,
-                                   int lda,  IComplexNDArray X,  int incX,
-                                   IComplexDouble beta, IComplexNDArray Y,  int incY);
-    protected abstract void zhbmv( char order,  char Uplo,
-                                   int N,  int K,  IComplexDouble alpha,  IComplexNDArray A,
-                                   int lda,  IComplexNDArray X,  int incX,
-                                   IComplexDouble beta, IComplexNDArray Y,  int incY);
-    protected abstract void zhpmv( char order,  char Uplo,
-                                   int N,  IComplexDouble alpha,  IComplexNDArray Ap,
-                                   IComplexNDArray X,  int incX,
-                                   IComplexDouble beta, IComplexNDArray Y,  int incY);
-    protected abstract  void zgeru( char order,  int M,  int N,
-                                    IComplexDouble alpha,  IComplexNDArray X,  int incX,
-                                    IComplexNDArray Y,  int incY, IComplexNDArray A,  int lda);
-    protected abstract void zgerc( char order,  int M,  int N,
-                                   IComplexDouble alpha,  IComplexNDArray X,  int incX,
-                                   IComplexNDArray Y,  int incY, IComplexNDArray A,  int lda);
-    protected abstract void zher( char order,  char Uplo,
-                                  int N,  double alpha,  IComplexNDArray X,  int incX,
-                                  IComplexNDArray A,  int lda);
-    protected abstract void zhpr( char order,  char Uplo,
-                                  int N,  INDArray alpha,  IComplexNDArray X,
-                                  int incX, IComplexNDArray A);
-    protected abstract void zher2( char order,  char Uplo,  int N,
-                                   IComplexDouble alpha,  IComplexNDArray X,  int incX,
-                                   IComplexNDArray Y,  int incY, IComplexNDArray A,  int lda);
-    protected abstract void zhpr2( char order,  char Uplo,  int N,
-                                   IComplexDouble alpha,  IComplexNDArray X,  int incX,
-                                   IComplexNDArray Y,  int incY, IComplexNDArray Ap);
+    protected abstract void chbmv(char order, char Uplo, int N, int K, IComplexFloat alpha, IComplexNDArray A, int lda,
+                    IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY);
+
+    protected abstract void chpmv(char order, char Uplo, int N, IComplexFloat alpha, IComplexNDArray Ap,
+                    IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY);
+
+    protected abstract void cgeru(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray Y, int incY, IComplexNDArray A, int lda);
+
+    protected abstract void cgerc(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray Y, int incY, IComplexNDArray A, int lda);
+
+    protected abstract void cher(char order, char Uplo, int N, float alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray A, int lda);
+
+    protected abstract void chpr(char order, char Uplo, int N, INDArray alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray A);
+
+    protected abstract void cher2(char order, char Uplo, int N, IComplexFloat alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray Y, int incY, IComplexNDArray A, int lda);
+
+    protected abstract void chpr2(char order, char Uplo, int N, IComplexFloat alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray Y, int incY, IComplexNDArray Ap);
+
+    protected abstract void zhemv(char order, char Uplo, int N, IComplexDouble alpha, IComplexNDArray A, int lda,
+                    IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY);
+
+    protected abstract void zhbmv(char order, char Uplo, int N, int K, IComplexDouble alpha, IComplexNDArray A, int lda,
+                    IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY);
+
+    protected abstract void zhpmv(char order, char Uplo, int N, IComplexDouble alpha, IComplexNDArray Ap,
+                    IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY);
+
+    protected abstract void zgeru(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray Y, int incY, IComplexNDArray A, int lda);
+
+    protected abstract void zgerc(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray Y, int incY, IComplexNDArray A, int lda);
+
+    protected abstract void zher(char order, char Uplo, int N, double alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray A, int lda);
+
+    protected abstract void zhpr(char order, char Uplo, int N, INDArray alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray A);
+
+    protected abstract void zher2(char order, char Uplo, int N, IComplexDouble alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray Y, int incY, IComplexNDArray A, int lda);
+
+    protected abstract void zhpr2(char order, char Uplo, int N, IComplexDouble alpha, IComplexNDArray X, int incX,
+                    IComplexNDArray Y, int incY, IComplexNDArray Ap);
 
 
 }

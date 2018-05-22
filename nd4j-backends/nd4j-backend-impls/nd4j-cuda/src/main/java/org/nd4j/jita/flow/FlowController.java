@@ -24,6 +24,13 @@ public interface FlowController {
     void synchronizeToHost(AllocationPoint point);
 
     /**
+     * This method ensures, that all asynchronous operations on referenced AllocationPoint are finished, and device memory state is up-to-date
+     *
+     * @param point
+     */
+    void synchronizeToDevice(AllocationPoint point);
+
+    /**
      * This method ensures, that all asynchronous operations on referenced AllocationPoint are finished
      * @param point
      */
@@ -38,6 +45,8 @@ public interface FlowController {
      */
     void registerAction(CudaContext context, INDArray result, INDArray... operands);
 
+    void registerActionAllWrite(CudaContext context, INDArray... operands);
+
     /**
      * This method is called before operation was executed
      *
@@ -45,6 +54,14 @@ public interface FlowController {
      * @param operands
      */
     CudaContext prepareAction(INDArray result, INDArray... operands);
+
+    /**
+     *
+     *
+     * @param operands
+     * @return
+     */
+    CudaContext prepareActionAllWrite(INDArray... operands);
 
     CudaContext prepareAction(AllocationPoint result, AllocationPoint... operands);
 

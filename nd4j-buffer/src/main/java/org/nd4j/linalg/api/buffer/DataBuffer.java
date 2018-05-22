@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -38,23 +39,14 @@ import java.util.Collection;
 public interface DataBuffer extends Serializable {
 
     enum Type {
-        DOUBLE,
-        FLOAT,
-        INT,
-        HALF,
-        COMPRESSED
+        DOUBLE, FLOAT, INT, HALF, COMPRESSED, LONG,UNKNOWN
     }
 
     enum TypeEx {
-        FLOAT8,
-        INT8,
-        UINT8,
-        FLOAT16,
-        INT16,
-        UINT16,
-        FLOAT,
-        DOUBLE
+        FLOAT8, INT8, UINT8, FLOAT16, INT16, UINT16, FLOAT, DOUBLE, THRESHOLD, FTHRESHOLD
     }
+
+    long getGenerationId();
 
 
     /**
@@ -68,9 +60,8 @@ public interface DataBuffer extends Serializable {
      * heap is backed by an array and can be useful depending on the api
      */
     enum AllocationMode {
-        DIRECT,
-        HEAP,
-        JAVACPP
+        DIRECT, HEAP, JAVACPP,
+        LONG_SHAPE, // long shapes will be used instead of int
     }
 
     /**
@@ -125,12 +116,16 @@ public interface DataBuffer extends Serializable {
      * @return a view of this as an nio int buffer
      */
     java.nio.IntBuffer asNioInt();
+
+    java.nio.LongBuffer asNioLong();
+
     /**
      * Returns a view of this as an
      * nio byte buffer
      * @return a view of this as an nio double buffer
      */
     java.nio.DoubleBuffer asNioDouble();
+
     /**
      * Returns a view of this as an
      * nio byte buffer
@@ -361,9 +356,9 @@ public interface DataBuffer extends Serializable {
     byte[] asBytes();
 
     /**
-     * The data type of the buffer
+     * The data opType of the buffer
      *
-     * @return the data type of the buffer
+     * @return the data opType of the buffer
      */
     Type dataType();
 
@@ -393,9 +388,20 @@ public interface DataBuffer extends Serializable {
      * or a reference. The reference is preferred for
      * faster access of data and no copying
      *
-     * @return the buffer as a float
+     * @return the buffer as a int
      */
     int[] asInt();
+
+    /**
+     * Return the buffer as an long  array
+     * Relative to the datatype, this will either be a copy
+     * or a reference. The reference is preferred for
+     * faster access of data and no copying
+     *
+     * @return the buffer as a long
+     */
+    long[] asLong();
+
 
     /**
      * Get element i in the buffer as a double
@@ -404,6 +410,13 @@ public interface DataBuffer extends Serializable {
      * @return the element at this index
      */
     double getDouble(long i);
+
+    /**
+     * Get element i in the buffer as long value
+     * @param i
+     * @return
+     */
+    long getLong(long i);
 
     /**
      * Get element i in the buffer as a double
@@ -446,6 +459,8 @@ public interface DataBuffer extends Serializable {
      */
     void put(long i, int element);
 
+    void put(long i, long element);
+
 
     /**
      * Get the complex float
@@ -485,6 +500,7 @@ public interface DataBuffer extends Serializable {
      * @return the length of the buffer
      */
     long underlyingLength();
+
     /**
      * Returns the offset of the buffer
      *
@@ -619,4 +635,37 @@ public interface DataBuffer extends Serializable {
      * @param reallyConstant
      */
     void setConstant(boolean reallyConstant);
+
+    /**
+     * This method returns True, if this DataBuffer is attached to some workspace. False otherwise
+     *
+     * @return
+     */
+    boolean isAttached();
+
+    /**
+     * This method checks, if given attached INDArray is still in scope of its parent Workspace
+     *
+     * PLEASE NOTE: if this INDArray isn't attached to any Workspace, this method will return true
+     * @return
+     */
+    boolean isInScope();
+
+    /**
+     * This method returns Workspace this DataBuffer is attached to
+     * @return
+     */
+    MemoryWorkspace getParentWorkspace();
+
+    /**
+     * Reallocate the native memory of the buffer
+     * @param length the new length of the buffer
+     * @return this databuffer
+     * */
+    DataBuffer reallocate(long length);
+
+    /**
+     * @return the capacity of the databuffer
+     * */
+    long capacity();
 }

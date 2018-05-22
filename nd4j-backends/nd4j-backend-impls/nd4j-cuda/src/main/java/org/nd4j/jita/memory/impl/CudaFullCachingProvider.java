@@ -8,6 +8,8 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,12 +24,13 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
-    protected final long MAX_GPU_ALLOCATION = configuration.getMaximumSingleDeviceAllocation();
+    //protected final long MAX_GPU_ALLOCATION = configuration.getMaximumSingleDeviceAllocation();
 
-    protected final long MAX_GPU_CACHE = configuration.getMaximumDeviceCache();
+    //protected final long MAX_GPU_CACHE = configuration.getMaximumDeviceCache();
 
 
-    protected volatile ConcurrentHashMap<Integer, ConcurrentHashMap<AllocationShape, CacheHolder>> deviceCache = new ConcurrentHashMap<>();
+    protected volatile ConcurrentHashMap<Integer, ConcurrentHashMap<AllocationShape, CacheHolder>> deviceCache =
+                    new ConcurrentHashMap<>();
 
 
     private static Logger log = LoggerFactory.getLogger(CudaFullCachingProvider.class);
@@ -38,7 +41,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
     }
 
     public void init() {
-        int numDevices = configuration.getAvailableDevices().size();
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
         deviceCachedAmount = new ArrayList<>();
 
@@ -60,13 +63,11 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
     @Override
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
-        if (location == AllocationStatus.DEVICE && reqMemory < MAX_GPU_ALLOCATION) {
+        if (location == AllocationStatus.DEVICE && reqMemory < CudaEnvironment.getInstance().getConfiguration().getMaximumDeviceAllocation()) {
 
 
             int deviceId = AtomicAllocator.getInstance().getDeviceId();
             ensureDeviceCacheHolder(deviceId, shape);
-
-        //    log.info("Trying to malloc for deviceId: {}", deviceId);
 
             CacheHolder cache = deviceCache.get(deviceId).get(shape);
             if (cache != null) {
@@ -75,8 +76,6 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                     cacheDeviceHit.incrementAndGet();
 
                     deviceCachedAmount.get(deviceId).addAndGet(-1 * reqMemory);
-
-//                    log.info("Serving from cache {} bytes, deviceId: {}, threadId: {}, pointer: {}", reqMemory, deviceId, Thread.currentThread().getId(), pointer.address());
 
                     PointersPair pair = new PointersPair();
                     pair.setDevicePointer(pointer);
@@ -111,13 +110,15 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
             // we don't cache too big objects
 
-            if (reqMemory > MAX_GPU_ALLOCATION || deviceCachedAmount.get(deviceId).get() >= MAX_GPU_CACHE) {
+            if (reqMemory > CudaEnvironment.getInstance().getConfiguration().getMaximumDeviceCacheableLength() || deviceCachedAmount.get(deviceId).get() >= CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache()) {
+                //log.info("DEVICE_{} memory purging: {} bytes; MS: {}; MT: {}", deviceId, reqMemory, MAX_GPU_ALLOCATION, MAX_GPU_CACHE);
                 super.free(point);
                 return;
             }
 
+//            log.info("Saving HOST memory into cache...");
+
             ensureDeviceCacheHolder(deviceId, shape);
-//            log.info("Saving point: deviceId: {}; address: {};", deviceId, point.getPointers().getDevicePointer().address());
 
             CacheHolder cache = deviceCache.get(deviceId).get(shape);
 
@@ -138,11 +139,11 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 long cacheDepth = cacheEntries * reqMemory;
 
                 //if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
-                    cache.put(new CudaPointer(point.getDevicePointer().address()));
-                    return;
+                cache.put(new CudaPointer(point.getDevicePointer().address()));
+                return;
                 //} else {
                 //    super.free(point);
-               // }
+                // }
             }
         }
         super.free(point);
@@ -154,18 +155,16 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
      * @param deviceId
      * @param shape
      */
-    protected  void ensureDeviceCacheHolder(Integer deviceId, AllocationShape shape) {
+    protected void ensureDeviceCacheHolder(Integer deviceId, AllocationShape shape) {
         if (!deviceCache.containsKey(deviceId)) {
             try {
-                singleLock.acquire();
-
-                if (!deviceCache.containsKey(deviceId)) {
-                    deviceCache.put(deviceId, new ConcurrentHashMap<AllocationShape, CacheHolder>());
+                synchronized (this) {
+                   if (!deviceCache.containsKey(deviceId)) {
+                        deviceCache.put(deviceId, new ConcurrentHashMap<AllocationShape, CacheHolder>());
+                    }
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
-            } finally {
-                singleLock.release();
             }
         }
 
@@ -186,8 +185,8 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
     @Override
     public synchronized void purgeCache() {
-        for (Integer device: deviceCache.keySet()) {
-            for (AllocationShape shape: deviceCache.get(device).keySet()) {
+        for (Integer device : deviceCache.keySet()) {
+            for (AllocationShape shape : deviceCache.get(device).keySet()) {
                 Pointer ptr = null;
                 while ((ptr = deviceCache.get(device).get(shape).poll()) != null) {
                     freeDevice(ptr, device);

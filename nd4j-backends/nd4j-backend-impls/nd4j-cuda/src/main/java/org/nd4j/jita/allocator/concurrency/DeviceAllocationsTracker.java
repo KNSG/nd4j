@@ -2,6 +2,7 @@ package org.nd4j.jita.allocator.concurrency;
 
 import lombok.NonNull;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,8 +23,6 @@ public class DeviceAllocationsTracker {
 
     private final Map<Integer, ReentrantReadWriteLock> deviceLocks = new ConcurrentHashMap<>();
 
-    //private final Table<Integer, Long, AtomicLong> allocationTable = HashBasedTable.create();
-
     private final Map<Integer, AtomicLong> memoryTackled = new ConcurrentHashMap<>();
 
     private final Map<Integer, AtomicLong> reservedSpace = new ConcurrentHashMap<>();
@@ -33,7 +32,9 @@ public class DeviceAllocationsTracker {
     public DeviceAllocationsTracker(@NonNull Configuration configuration) {
         this.configuration = configuration;
 
-        for (Integer device: configuration.getAvailableDevices()) {
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+        for (int device = 0; device < numDevices; device++) {
             deviceLocks.put(device, new ReentrantReadWriteLock());
         }
     }
@@ -41,7 +42,7 @@ public class DeviceAllocationsTracker {
     protected void ensureThreadRegistered(Long threadId, Integer deviceId) {
         globalLock.readLock().lock();
 
-      //  boolean contains = allocationTable.contains(deviceId, threadId);
+        //  boolean contains = allocationTable.contains(deviceId, threadId);
 
         globalLock.readLock().unlock();
 
@@ -50,15 +51,15 @@ public class DeviceAllocationsTracker {
 
             //contains = allocationTable.contains(deviceId, threadId);
             //if (!contains) {
-                //allocationTable.put(deviceId, threadId, new AtomicLong(0));
+            //allocationTable.put(deviceId, threadId, new AtomicLong(0));
 
-                if (!memoryTackled.containsKey(deviceId)) {
-                    memoryTackled.put(deviceId, new AtomicLong(0));
-                }
+            if (!memoryTackled.containsKey(deviceId)) {
+                memoryTackled.put(deviceId, new AtomicLong(0));
+            }
 
-                if (!reservedSpace.containsKey(deviceId)) {
-                    reservedSpace.put(deviceId, new AtomicLong(0));
-                }
+            if (!reservedSpace.containsKey(deviceId)) {
+                reservedSpace.put(deviceId, new AtomicLong(0));
+            }
             //}
             globalLock.writeLock().unlock();
         }
@@ -93,9 +94,9 @@ public class DeviceAllocationsTracker {
 
             //log.info("Memory reduction on device [{}], memory size: [{}], before: [{}], after [{}]", deviceId, memorySize, before, after);
 
-//            AtomicLong val = allocationTable.get(deviceId, threadId);
+            //            AtomicLong val = allocationTable.get(deviceId, threadId);
 
-//            val.addAndGet(memorySize * -1);
+            //            val.addAndGet(memorySize * -1);
 
             return val2.get();
         } finally {
@@ -115,7 +116,7 @@ public class DeviceAllocationsTracker {
         ensureThreadRegistered(threadId, deviceId);
         try {
             deviceLocks.get(deviceId).writeLock().lock();
-/*
+            /*
             if (getAllocatedSize(deviceId) + memorySize + getReservedSpace(deviceId)> environment.getDeviceInformation(deviceId).getTotalMemory() * configuration.getMaxDeviceMemoryUsed()) {
                 return false;
             } else {

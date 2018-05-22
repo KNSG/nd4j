@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -45,6 +45,11 @@ public class And implements Condition {
     @Override
     public double getValue() {
         return -1;
+    }
+
+    @Override
+    public double epsThreshold() {
+        return 0.0;
     }
 
     @Override

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -21,9 +21,12 @@ package org.nd4j.linalg.api.buffer;
 
 
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
 
@@ -33,6 +36,7 @@ import java.nio.ByteBuffer;
  * @author Adam Gibson
  */
 public class IntBuffer extends BaseDataBuffer {
+
     /**
      * Meant for creating another view of a buffer
      *
@@ -48,11 +52,19 @@ public class IntBuffer extends BaseDataBuffer {
         super(length);
     }
 
-    public IntBuffer(long length, boolean initialize){
+    public IntBuffer(long length, boolean initialize) {
         super(length, initialize);
     }
 
-    public IntBuffer(ByteBuffer buffer, int length, int offset) {
+    public IntBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
+        super(length, initialize, workspace);
+    }
+
+    public IntBuffer(int[] ints, boolean copy, MemoryWorkspace workspace) {
+        super(ints, copy, workspace);
+    }
+
+    public IntBuffer(ByteBuffer buffer, int length, long offset) {
         super(buffer, length, offset);
     }
 
@@ -64,7 +76,7 @@ public class IntBuffer extends BaseDataBuffer {
         super(data, copy);
     }
 
-    public IntBuffer(double[] data, boolean copy, int offset) {
+    public IntBuffer(double[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -72,11 +84,11 @@ public class IntBuffer extends BaseDataBuffer {
         super(data, copy);
     }
 
-    public IntBuffer(float[] data, boolean copy, int offset) {
+    public IntBuffer(float[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
-    public IntBuffer(int[] data, boolean copy, int offset) {
+    public IntBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -84,7 +96,7 @@ public class IntBuffer extends BaseDataBuffer {
         super(length, elementSize);
     }
 
-    public IntBuffer(int length, int elementSize, int offset) {
+    public IntBuffer(int length, int elementSize, long offset) {
         super(length, elementSize, offset);
     }
 
@@ -92,12 +104,9 @@ public class IntBuffer extends BaseDataBuffer {
         super(underlyingBuffer, length, offset);
     }
 
-    public IntBuffer(ByteBuffer buffer,int length) {
-        super(buffer,length);
+    public IntBuffer(ByteBuffer buffer, int length) {
+        super(buffer, length);
     }
-
-
-
 
     @Override
     protected DataBuffer create(long length) {
@@ -123,12 +132,12 @@ public class IntBuffer extends BaseDataBuffer {
 
     @Override
     public DataBuffer create(float[] data) {
-       return new IntBuffer(data);
+        return new IntBuffer(data);
     }
 
     @Override
     public DataBuffer create(int[] data) {
-       return new IntBuffer(data);
+        return new IntBuffer(data);
     }
 
     @Override
@@ -146,11 +155,8 @@ public class IntBuffer extends BaseDataBuffer {
         super(data, copy);
     }
 
-
-
-
     /**
-     * Initialize the type of this buffer
+     * Initialize the opType of this buffer
      */
     @Override
     protected void initTypeAndSize() {

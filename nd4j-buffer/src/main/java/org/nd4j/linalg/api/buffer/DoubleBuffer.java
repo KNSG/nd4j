@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -21,9 +21,12 @@ package org.nd4j.linalg.api.buffer;
 
 
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.DoubleIndexer;
+import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
 
@@ -48,7 +51,7 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(length);
     }
 
-    public DoubleBuffer(long length, boolean initialize){
+    public DoubleBuffer(long length, boolean initialize) {
         super(length, initialize);
     }
 
@@ -56,7 +59,7 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(length, elementSize);
     }
 
-    public DoubleBuffer(int length, int elementSize, int offset) {
+    public DoubleBuffer(int length, int elementSize, long offset) {
         super(length, elementSize, offset);
     }
 
@@ -64,6 +67,17 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(underlyingBuffer, length, offset);
     }
 
+    public DoubleBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
+        super(length, initialize, workspace);
+    }
+
+    public DoubleBuffer(double[] data, MemoryWorkspace workspace) {
+        this(data, true, workspace);
+    }
+
+    public DoubleBuffer(double[] floats, boolean copy, MemoryWorkspace workspace) {
+        super(floats, copy, workspace);
+    }
 
     public DoubleBuffer(double[] data) {
         super(data);
@@ -77,7 +91,7 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(data, copyOnOps);
     }
 
-    public DoubleBuffer(int[] data, boolean copy, int offset) {
+    public DoubleBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -89,15 +103,15 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(data, copyOnOps);
     }
 
-    public DoubleBuffer(float[] data, boolean copy, int offset) {
+    public DoubleBuffer(float[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
-    public DoubleBuffer(ByteBuffer buffer,int length) {
-        super(buffer,length);
+    public DoubleBuffer(ByteBuffer buffer, int length) {
+        super(buffer, length);
     }
 
-    public DoubleBuffer(ByteBuffer buffer, int length, int offset) {
+    public DoubleBuffer(ByteBuffer buffer, int length, long offset) {
         super(buffer, length, offset);
     }
 
@@ -119,13 +133,13 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(doubles, copy);
     }
 
-    public DoubleBuffer(double[] data, boolean copy, int offset) {
+    public DoubleBuffer(double[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
-
-
-
+    public DoubleBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
+        super(data, copy, offset, workspace);
+    }
 
     @Override
     public float getFloat(long i) {
@@ -134,7 +148,7 @@ public class DoubleBuffer extends BaseDataBuffer {
 
     @Override
     public Number getNumber(long i) {
-        return  getDouble(i);
+        return getDouble(i);
     }
 
     @Override
@@ -151,6 +165,7 @@ public class DoubleBuffer extends BaseDataBuffer {
     public DataBuffer create(int[] data) {
         return new DoubleBuffer(data);
     }
+
     @Override
     protected DataBuffer create(long length) {
         return new DoubleBuffer(length);
@@ -158,18 +173,16 @@ public class DoubleBuffer extends BaseDataBuffer {
 
 
     @Override
-    public void flush() {
-    }
+    public void flush() {}
 
     /**
-     * Initialize the type of this buffer
+     * Initialize the opType of this buffer
      */
     @Override
     protected void initTypeAndSize() {
         elementSize = 8;
         type = Type.DOUBLE;
     }
-
 
 
 

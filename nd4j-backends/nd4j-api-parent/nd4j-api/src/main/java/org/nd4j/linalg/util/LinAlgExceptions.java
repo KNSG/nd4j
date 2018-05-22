@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,7 +19,10 @@
 
 package org.nd4j.linalg.util;
 
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.util.Arrays;
 
@@ -31,43 +34,57 @@ import java.util.Arrays;
 public class LinAlgExceptions {
     /**
      * Asserts both arrays be the same length
-     * @param n
-     * @param n2
+     * @param x
+     * @param z
      */
-    public static void assertSameLength(INDArray n, INDArray n2) {
-        if (n.length() != n2.length())
-            throw new IllegalStateException("Mis matched lengths: ["+n.length()+"] != ["+n2.length()+"]");
+    public static void assertSameLength(INDArray x, INDArray z) {
+        val lengthX = x.length();
+        val lengthZ = z.length();
+        if (lengthX != lengthZ && lengthX != 1 && lengthZ != 1)
+            throw new IllegalStateException("Mis matched lengths: [" + x.length() + "] != [" + z.length() + "] - " +
+                    "Array 1 shape: " + Arrays.toString(x.shape()) + ", array 2 shape: " + Arrays.toString(z.shape()));
+    }
+
+    public static void assertSameLength(INDArray x, INDArray y, INDArray z) {
+        val lengthX = x.length();
+        val lengthY = y.length();
+        val lengthZ = z.length();
+
+        if (lengthX != lengthY && lengthX != lengthZ && lengthX != 1 && lengthY != 1 && lengthZ != 1)
+            throw new IllegalStateException("Mis matched lengths: [" + lengthX + "] != [" + lengthY + "] != [" + lengthZ + "] - " +
+                    "Array 1 shape: " + Arrays.toString(x.shape()) + ", array 2 shape: " + Arrays.toString(y.shape()) + ", array 3 shape: " + Arrays.toString(z.shape()));
     }
 
     public static void assertSameShape(INDArray n, INDArray n2) {
-        if( !Arrays.equals( n.shape(),n2.shape() ) )
-            throw new IllegalStateException("Mis matched shapes");
+        if (!Shape.shapeEquals(n.shape(), n2.shape()))
+            throw new IllegalStateException("Mis matched shapes: " + Arrays.toString(n.shape()) + ", "
+                    + Arrays.toString(n2.shape()));
     }
 
     public static void assertRows(INDArray n, INDArray n2) {
         if (n.rows() != n2.rows())
-            throw new IllegalStateException("Mis matched rows");
+            throw new IllegalStateException("Mis matched rows: " + n.rows() + " != " + n2.rows());
     }
 
 
-    public static void assertVector(INDArray...arr) {
-        for(INDArray a1 : arr)
+    public static void assertVector(INDArray... arr) {
+        for (INDArray a1 : arr)
             assertVector(a1);
     }
 
-    public static void assertMatrix(INDArray...arr) {
-        for(INDArray a1 : arr)
+    public static void assertMatrix(INDArray... arr) {
+        for (INDArray a1 : arr)
             assertMatrix(a1);
     }
 
     public static void assertVector(INDArray arr) {
-        if(!arr.isVector())
-            throw new IllegalArgumentException("Array must be a vector");
+        if (!arr.isVector())
+            throw new IllegalArgumentException("Array must be a vector. Array has shape: " + Arrays.toString(arr.shape()));
     }
 
     public static void assertMatrix(INDArray arr) {
-        if(arr.shape().length > 2)
-            throw new IllegalArgumentException("Array must be a matrix");
+        if (arr.shape().length > 2)
+            throw new IllegalArgumentException("Array must be a matrix. Array has shape: " + Arrays.toString(arr.shape()));
     }
 
 
@@ -79,17 +96,25 @@ public class LinAlgExceptions {
      * @param nd2 the right ndarray
      */
     public static void assertMultiplies(INDArray nd1, INDArray nd2) {
-        if (nd1.columns() == nd2.rows() || nd1.rows() == nd2.columns()){
+        if (nd1.rank() == 2 && nd2.rank() == 2 && nd1.columns() == nd2.rows()) {
             return;
         }
-        throw new IllegalStateException("Column of left array " + nd1.columns() + " != rows of right " + nd2.rows() +
-                " or rows of left array "  + nd1.rows() + " != columns of right " + nd2.columns());
+
+        // 1D edge case
+        if (nd1.rank() == 2 && nd2.rank() == 1 && nd1.columns() == nd2.length())
+            return;
+
+        throw new ND4JIllegalStateException("Cannot execute matrix multiplication: " + Arrays.toString(nd1.shape())
+                        + "x" + Arrays.toString(nd2.shape())
+                        + (nd1.rank() != 2 || nd2.rank() != 2 ? ": inputs are not matrices"
+                                        : ": Column of left array " + nd1.columns() + " != rows of right "
+                                                        + nd2.rows()));
     }
 
 
     public static void assertColumns(INDArray n, INDArray n2) {
         if (n.columns() != n2.columns())
-            throw new IllegalStateException("Mis matched rows");
+            throw new IllegalStateException("Mis matched columns: " + n.columns() + " != " + n2.columns());
     }
 
     public static void assertValidNum(INDArray n) {

@@ -3,12 +3,12 @@ package org.nd4j.jita.conf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -19,136 +19,171 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class Configuration implements Serializable {
-    private static Logger logger = LoggerFactory.getLogger(Configuration.class);
 
     public enum ExecutionModel {
-        SEQUENTIAL,
-        ASYNCHRONOUS,
-        OPTIMIZED,
+        SEQUENTIAL, ASYNCHRONOUS, OPTIMIZED,
     }
 
     public enum AllocationModel {
-        DIRECT,
-        CACHE_HOST,
-        CACHE_ALL,
+        DIRECT, CACHE_HOST, CACHE_ALL,
     }
 
     public enum MemoryModel {
-        IMMEDIATE,
-        DELAYED
+        IMMEDIATE, DELAYED
     }
 
-    @Getter private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
+    @Getter
+    @Deprecated //Only SEQUENTIAL is supported
+    private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
 
-    @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
+    @Getter
+    private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
 
-    @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
+    @Getter
+    private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
-    @Getter private MemoryModel memoryModel = MemoryModel.IMMEDIATE;
+    @Getter
+    private MemoryModel memoryModel = MemoryModel.IMMEDIATE;
 
-    @Getter private boolean debug = false;
+    @Getter
+    private boolean debug = false;
 
-    @Getter private boolean verbose = false;
+    @Getter
+    private boolean verbose = false;
 
-    @Getter private boolean gatherStatistics = false;
+    @Getter
+    private boolean fillDashboard = false;
 
     private boolean forceSingleGPU = false;
+
+    @Getter
+    private long noGcWindowMs = 100;
 
     /**
      * Keep this value between 0.01 and 0.95 please
      */
-    @Getter private double maximumDeviceMemoryUsed = 0.85;
+    @Getter
+    private double maximumDeviceMemoryUsed = 0.85;
 
     /**
      * Minimal number of activations for relocation threshold
      */
-    @Getter private int minimumRelocationThreshold = 5;
+    @Getter
+    private int minimumRelocationThreshold = 5;
 
     /**
      * Minimal guaranteed TTL for memory chunk
      */
-    @Getter private long minimumTTLMilliseconds = 10 * 1000L;
+    @Getter
+    private long minimumTTLMilliseconds = 10 * 1000L;
 
     /**
      * Number of buckets/garbage collectors for host memory
      */
-    @Getter private int numberOfGcThreads = 6;
+    @Getter
+    private int numberOfGcThreads = 6;
 
     /**
      * Deallocation aggressiveness
      */
-    @Getter private Aggressiveness hostDeallocAggressiveness = Aggressiveness.REASONABLE;
+    @Deprecated
+    @Getter
+    private Aggressiveness hostDeallocAggressiveness = Aggressiveness.REASONABLE;
 
-    @Getter private Aggressiveness gpuDeallocAggressiveness = Aggressiveness.REASONABLE;
+    @Deprecated
+    @Getter
+    private Aggressiveness gpuDeallocAggressiveness = Aggressiveness.REASONABLE;
 
     /**
      * Allocation aggressiveness
      */
-    @Getter private Aggressiveness gpuAllocAggressiveness = Aggressiveness.REASONABLE;
+    @Deprecated
+    @Getter
+    private Aggressiveness gpuAllocAggressiveness = Aggressiveness.REASONABLE;
 
 
     /**
      * Maximum allocated per-device memory, in bytes
      */
-    @Getter private long maximumDeviceAllocation = 4 * 1024 * 1024 * 1024L;
+    @Getter
+    private long maximumDeviceAllocation = 4 * 1024 * 1024 * 1024L;
 
 
     /**
      * Maximum allocatable zero-copy/pinned/pageable memory
      */
-    @Getter private long maximumZeroAllocation = Runtime.getRuntime().maxMemory() + (500 * 1024 * 1024L);
+    @Getter
+    private long maximumZeroAllocation = Runtime.getRuntime().maxMemory() + (500 * 1024 * 1024L);
 
     /**
      * True if allowed, false if relocation required
      */
-    @Getter private boolean crossDeviceAccessAllowed = true;
+    @Getter
+    private boolean crossDeviceAccessAllowed = true;
 
     /**
      * True, if allowed, false otherwise
      */
-    @Getter private boolean zeroCopyFallbackAllowed = false;
+    @Getter
+    private boolean zeroCopyFallbackAllowed = false;
 
     /**
      * Maximum length of single memory chunk
      */
-    @Getter private long maximumSingleHostAllocation = Long.MAX_VALUE;
+    @Getter
+    private long maximumSingleHostAllocation = Long.MAX_VALUE;
 
-    @Getter private long maximumSingleDeviceAllocation = 1024 * 1024 * 1024L;
+    @Getter
+    private long maximumSingleDeviceAllocation = 1024 * 1024 * 1024L;
 
-    @Getter private List<Integer> availableDevices = new ArrayList<>();
+    @Getter
+    private List<Integer> availableDevices = new ArrayList<>();
 
-    @Getter private List<Integer> bannedDevices = new ArrayList<>();
+    @Getter
+    private List<Integer> bannedDevices = new ArrayList<>();
 
-    @Getter private int maximumGridSize = 4096;
+    @Getter
+    private int maximumGridSize = 4096;
 
-    @Getter private int maximumBlockSize = 256;
+    @Getter
+    private int maximumBlockSize = 256;
 
-    @Getter private int minimumBlockSize = 32;
+    @Getter
+    private int minimumBlockSize = 32;
 
-    @Getter private long maximumHostCache = 3 * 1024 * 1024 * 1024L;
+    @Getter
+    private long maximumHostCache = 3 * 1024 * 1024 * 1024L;
 
-    @Getter private long maximumDeviceCache = 1024 * 1024 * 1024L;
+    @Getter
+    private long maximumDeviceCache = 512L * 1024L * 1024L;
 
-    @Getter private boolean usePreallocation = true;
+    @Getter
+    private boolean usePreallocation = false;
 
-    @Getter private int preallocationCalls = 10;
+    @Getter
+    private int preallocationCalls = 10;
 
-    @Getter private long maximumHostCacheableLength = 100663296;
+    @Getter
+    private long maximumHostCacheableLength = 100663296;
 
-    @Getter private long maximumDeviceCacheableLength = 100663296;
+    @Getter
+    private long maximumDeviceCacheableLength = 16L * 1024L * 1024L;
 
-    @Getter private int commandQueueLength = 3;
+    @Getter
+    private int commandQueueLength = 3;
 
-    @Getter private int commandLanesNumber = 4;
+    @Getter
+    private int commandLanesNumber = 4;
 
-    @Getter private int debugTriggered = 0;
+    @Getter
+    private int debugTriggered = 0;
 
-    @Getter private int poolSize = 32;
+    @Getter
+    private int poolSize = 32;
 
     private final AtomicBoolean initialized = new AtomicBoolean(false);
-
-    private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     public boolean isInitialized() {
         return initialized.get();
@@ -158,109 +193,113 @@ public class Configuration implements Serializable {
         this.initialized.compareAndSet(false, true);
     }
 
+    /**
+     * Environment variables for
+     * controlling cuda.
+     */
     private static final String MAX_BLOCK_SIZE = "ND4J_CUDA_MAX_BLOCK_SIZE";
     private static final String MIN_BLOCK_SIZE = "ND4J_CUDA_MIN_BLOCK_SIZE";
     private static final String MAX_GRID_SIZE = "ND4J_CUDA_MAX_GRID_SIZE";
-    private static final String DEBUG_ENABLED = "ND4J_CUDA_DEBUG";
+    private static final String DEBUG_ENABLED = "ND4J_DEBUG";
+    private static final String VERBOSE = "ND4J_VERBOSE";
     private static final String USE_PREALLOCATION = "ND4J_CUDA_USE_PREALLOCATION";
     private static final String MAX_DEVICE_CACHE = "ND4J_CUDA_MAX_DEVICE_CACHE";
     private static final String MAX_HOST_CACHE = "ND4J_CUDA_MAX_HOST_CACHE";
     private static final String MAX_DEVICE_ALLOCATION = "ND4J_CUDA_MAX_DEVICE_ALLOCATION";
     private static final String FORCE_SINGLE_GPU = "ND4J_CUDA_FORCE_SINGLE_GPU";
-    private static final String VERBOSE = "ND4J_CUDA_VERBOSE";
 
 
     private void parseEnvironmentVariables() {
-        Map<String, String> env = System.getenv();
 
-        if (env.containsKey(MAX_BLOCK_SIZE)) {
+        // Do not call System.getenv(): Accessing all variables requires higher security privileges
+        if (System.getenv(MAX_BLOCK_SIZE) != null) {
             try {
-                int var = Integer.parseInt(env.get(MAX_BLOCK_SIZE));
+                int var = Integer.parseInt(System.getenv(MAX_BLOCK_SIZE));
                 setMaximumBlockSize(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MAX_BLOCK_SIZE, env.get(MAX_BLOCK_SIZE));
+                log.error("Can't parse {}: [{}]", MAX_BLOCK_SIZE, System.getenv(MAX_BLOCK_SIZE));
             }
         }
 
-        if (env.containsKey(MIN_BLOCK_SIZE)) {
+        if (System.getenv(MIN_BLOCK_SIZE) != null) {
             try {
-                int var = Integer.parseInt(env.get(MIN_BLOCK_SIZE));
+                int var = Integer.parseInt(System.getenv(MIN_BLOCK_SIZE));
                 setMinimumBlockSize(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MIN_BLOCK_SIZE, env.get(MIN_BLOCK_SIZE));
+                log.error("Can't parse {}: [{}]", MIN_BLOCK_SIZE, System.getenv(MIN_BLOCK_SIZE));
             }
         }
 
-        if (env.containsKey(MAX_GRID_SIZE)) {
+        if (System.getenv(MAX_GRID_SIZE) != null) {
             try {
-                int var = Integer.parseInt(env.get(MAX_GRID_SIZE));
+                int var = Integer.parseInt(System.getenv(MAX_GRID_SIZE));
                 setMaximumGridSize(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MAX_GRID_SIZE, env.get(MAX_GRID_SIZE));
+                log.error("Can't parse {}: [{}]", MAX_GRID_SIZE, System.getenv(MAX_GRID_SIZE));
             }
         }
 
-        if (env.containsKey(DEBUG_ENABLED)) {
+        if (System.getenv(DEBUG_ENABLED) != null) {
             try {
-                boolean var = Boolean.parseBoolean(env.get(DEBUG_ENABLED));
+                boolean var = Boolean.parseBoolean(System.getenv(DEBUG_ENABLED));
                 enableDebug(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", DEBUG_ENABLED, env.get(DEBUG_ENABLED));
+                log.error("Can't parse {}: [{}]", DEBUG_ENABLED, System.getenv(DEBUG_ENABLED));
             }
         }
 
-        if (env.containsKey(FORCE_SINGLE_GPU)) {
+        if (System.getenv(FORCE_SINGLE_GPU) != null) {
             try {
-                boolean var = Boolean.parseBoolean(env.get(FORCE_SINGLE_GPU));
+                boolean var = Boolean.parseBoolean(System.getenv(FORCE_SINGLE_GPU));
                 allowMultiGPU(!var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", FORCE_SINGLE_GPU, env.get(FORCE_SINGLE_GPU));
+                log.error("Can't parse {}: [{}]", FORCE_SINGLE_GPU, System.getenv(FORCE_SINGLE_GPU));
             }
         }
 
-        if (env.containsKey(VERBOSE)) {
+        if (System.getenv(VERBOSE) != null) {
             try {
-                boolean var = Boolean.parseBoolean(env.get(VERBOSE));
+                boolean var = Boolean.parseBoolean(System.getenv(VERBOSE));
                 setVerbose(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", VERBOSE, env.get(VERBOSE));
+                log.error("Can't parse {}: [{}]", VERBOSE, System.getenv(VERBOSE));
             }
         }
 
-        if (env.containsKey(USE_PREALLOCATION)) {
+        if (System.getenv(USE_PREALLOCATION) != null) {
             try {
-                boolean var = Boolean.parseBoolean(env.get(USE_PREALLOCATION));
+                boolean var = Boolean.parseBoolean(System.getenv(USE_PREALLOCATION));
                 allowPreallocation(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", USE_PREALLOCATION, env.get(USE_PREALLOCATION));
+                log.error("Can't parse {}: [{}]", USE_PREALLOCATION, System.getenv(USE_PREALLOCATION));
             }
         }
 
-        if (env.containsKey(MAX_DEVICE_CACHE)) {
+        if (System.getenv(MAX_DEVICE_CACHE) != null) {
             try {
-                long var = Long.parseLong(env.get(MAX_DEVICE_CACHE));
+                long var = Long.parseLong(System.getenv(MAX_DEVICE_CACHE));
                 setMaximumDeviceCache(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MAX_DEVICE_CACHE, env.get(MAX_DEVICE_CACHE));
+                log.error("Can't parse {}: [{}]", MAX_DEVICE_CACHE, System.getenv(MAX_DEVICE_CACHE));
             }
         }
 
 
-        if (env.containsKey(MAX_HOST_CACHE)) {
+        if (System.getenv(MAX_HOST_CACHE) != null) {
             try {
-                long var = Long.parseLong(env.get(MAX_HOST_CACHE));
+                long var = Long.parseLong(System.getenv(MAX_HOST_CACHE));
                 setMaximumHostCache(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MAX_HOST_CACHE, env.get(MAX_HOST_CACHE));
+                log.error("Can't parse {}: [{}]", MAX_HOST_CACHE, System.getenv(MAX_HOST_CACHE));
             }
         }
 
-        if (env.containsKey(MAX_DEVICE_ALLOCATION)) {
+        if (System.getenv(MAX_DEVICE_ALLOCATION) != null) {
             try {
-                long var = Long.parseLong(env.get(MAX_DEVICE_ALLOCATION));
+                long var = Long.parseLong(System.getenv(MAX_DEVICE_ALLOCATION));
                 setMaximumSingleDeviceAllocation(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MAX_DEVICE_ALLOCATION, env.get(MAX_DEVICE_ALLOCATION));
+                log.error("Can't parse {}: [{}]", MAX_DEVICE_ALLOCATION, System.getenv(MAX_DEVICE_ALLOCATION));
             }
         }
 
@@ -272,8 +311,8 @@ public class Configuration implements Serializable {
      * @param reallyEnable
      * @return
      */
-    public Configuration enableStatisticsGathering(boolean reallyEnable) {
-        gatherStatistics = reallyEnable;
+    public Configuration enableDashboard(boolean reallyEnable) {
+        fillDashboard = reallyEnable;
         return this;
     }
 
@@ -312,7 +351,6 @@ public class Configuration implements Serializable {
         return this;
     }
 
-
     /**
      * This method allows you to specify maximum memory cache per device
      *
@@ -334,29 +372,29 @@ public class Configuration implements Serializable {
     public Configuration setMaximumDeviceMemoryUsed(double percentage) {
         if (percentage < 0.02 || percentage > 0.95) {
             this.maximumDeviceMemoryUsed = 0.85;
-        } else this.maximumDeviceMemoryUsed = percentage;
+        } else
+            this.maximumDeviceMemoryUsed = percentage;
 
         return this;
     }
 
     public Configuration() {
-        int cnt = nativeOps.getAvailableDevices();
+        parseEnvironmentVariables();
+    }
+
+
+    void updateDevice() {
+        int cnt = Nd4j.getAffinityManager().getNumberOfDevices();
+
         if (cnt == 0)
             throw new RuntimeException("No CUDA devices were found in system");
 
         for (int i = 0; i < cnt; i++) {
             availableDevices.add(i);
         }
-
-        parseEnvironmentVariables();
-
-        nativeOps.setOmpNumThreads(maximumBlockSize);
-        nativeOps.setGridLimit(maximumGridSize);
-
-        // if we have multi-gpu system - force DELAYED memory model by default
-        //if (cnt > 1 && !forceSingleGPU)
-            //this.memoryModel = MemoryModel.DELAYED;
     }
+
+
 
     /**
      * This method checks, if GPU subsystem supports cross-device P2P access over PCIe.
@@ -366,7 +404,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public boolean isP2PSupported() {
-        return nativeOps.isP2PAvailable();
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable();
     }
 
     /**
@@ -391,17 +429,37 @@ public class Configuration implements Serializable {
     }
 
     /**
-     * This method forces one specific device to be used. All other devices present in system will be ignored.
+     * This method forces specific device to be used. All other devices present in system will be ignored.
      *
      * @param deviceId
      * @return
      */
     public Configuration useDevice(@NonNull Integer deviceId) {
-        if (!availableDevices.contains(deviceId))
-            throw new IllegalStateException("Non-existent device request: ["+deviceId+"]");
+        return useDevices(deviceId);
+    }
 
-        availableDevices.clear();
-        availableDevices.add(0, deviceId);
+    /**
+     * This method forces specific devices to be used. All other devices present in system will be ignored.
+     *
+     * @param devices
+     * @return
+     */
+    public Configuration useDevices(@NonNull int... devices) {
+        List<Integer> usableDevices = new ArrayList<>();
+        for (int device : devices) {
+            if (!availableDevices.contains(device)) {
+                log.warn("Non-existent device [{}] requested, ignoring...", device);
+            } else {
+                if (!usableDevices.contains(device))
+                    usableDevices.add(device);
+            }
+
+        }
+
+        if (usableDevices.size() > 0) {
+            availableDevices.clear();
+            availableDevices.addAll(usableDevices);
+        }
 
         return this;
     }
@@ -414,7 +472,7 @@ public class Configuration implements Serializable {
     public Configuration setMaximumZeroAllocation(long max) {
         long xmx = Runtime.getRuntime().maxMemory();
         if (max < xmx)
-            logger.warn("Setting maximum memory below -Xmx value can cause problems");
+            log.warn("Setting maximum memory below -Xmx value can cause problems");
 
         if (max <= 0)
             throw new IllegalStateException("You can't set maximum host memory <= 0");
@@ -443,7 +501,7 @@ public class Configuration implements Serializable {
      * @param max
      * @return
      */
-    public Configuration setMaximumSingleHostAllocation(long max){
+    public Configuration setMaximumSingleHostAllocation(long max) {
         this.maximumSingleHostAllocation = max;
 
         return this;
@@ -457,7 +515,7 @@ public class Configuration implements Serializable {
      * @param max
      * @return
      */
-    public Configuration setMaximumSingleDeviceAllocation(long max){
+    public Configuration setMaximumSingleDeviceAllocation(long max) {
         this.maximumSingleDeviceAllocation = max;
 
         return this;
@@ -477,8 +535,6 @@ public class Configuration implements Serializable {
 
         this.maximumGridSize = gridDim;
 
-        nativeOps.setGridLimit(maximumGridSize);
-
         return this;
     }
 
@@ -497,8 +553,6 @@ public class Configuration implements Serializable {
 
         this.maximumBlockSize = blockDim;
 
-        nativeOps.setOmpNumThreads(blockDim);
-
         return this;
     }
 
@@ -508,8 +562,6 @@ public class Configuration implements Serializable {
 
 
         this.minimumBlockSize = blockDim;
-
-        nativeOps.setOmpMinThreads(blockDim);
 
         return this;
     }
@@ -523,17 +575,11 @@ public class Configuration implements Serializable {
      */
     public Configuration enableDebug(boolean debug) {
         this.debug = debug;
-
-        nativeOps.enableDebugMode(debug);
-
         return this;
     }
 
     public Configuration setVerbose(boolean verbose) {
         this.verbose = verbose;
-
-        nativeOps.enableVerboseMode(verbose);
-
         return this;
     }
 
@@ -545,8 +591,6 @@ public class Configuration implements Serializable {
      */
     public Configuration allowCrossDeviceAccess(boolean reallyAllow) {
         this.crossDeviceAccessAllowed = reallyAllow;
-
-        nativeOps.enableP2P(reallyAllow);
 
         return this;
     }
@@ -562,10 +606,14 @@ public class Configuration implements Serializable {
      *
      * @param executionModel
      * @return
+     * @deprecated Only ExecutionModel.SEQUENTIAL is supported
      */
+    @Deprecated
     public Configuration setExecutionModel(@NonNull ExecutionModel executionModel) {
+        if(executionModel != ExecutionModel.SEQUENTIAL){
+            throw new IllegalArgumentException("Only ExecutionModel.SEQUENTIAL is supported");
+        }
         this.executionModel = ExecutionModel.SEQUENTIAL;
-
         return this;
     }
 
@@ -600,7 +648,8 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setFirstMemory(@NonNull AllocationStatus initialMemory) {
-        if (initialMemory != AllocationStatus.DEVICE && initialMemory != AllocationStatus.HOST && initialMemory != AllocationStatus.DELAYED)
+        if (initialMemory != AllocationStatus.DEVICE && initialMemory != AllocationStatus.HOST
+                        && initialMemory != AllocationStatus.DELAYED)
             throw new IllegalStateException("First memory should be either [HOST], [DEVICE] or [DELAYED]");
 
         this.firstMemory = initialMemory;
@@ -625,7 +674,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setNumberOfGcThreads(int numThreads) {
-        if (numThreads <= 0 || numThreads >20)
+        if (numThreads <= 0 || numThreads > 20)
             throw new IllegalStateException("Please, use something in range of [1..20] as number of GC threads");
 
         if (!isInitialized())
@@ -705,6 +754,21 @@ public class Configuration implements Serializable {
             throw new IllegalStateException("Command queue length can't be <= 0");
         this.commandQueueLength = length;
 
+        return this;
+    }
+
+    /**
+     * This option specifies minimal time gap between two subsequent System.gc() calls
+     * Set to 0 to disable this option.
+     *
+     * @param windowMs
+     * @return
+     */
+    public Configuration setNoGcWindowMs(long windowMs) {
+        if (windowMs < 1)
+            throw new IllegalStateException("No-GC window should have positive value");
+
+        this.noGcWindowMs = windowMs;
         return this;
     }
 

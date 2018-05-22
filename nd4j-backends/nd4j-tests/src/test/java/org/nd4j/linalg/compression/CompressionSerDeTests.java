@@ -13,6 +13,7 @@ import java.io.ByteArrayInputStream;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for SerDe on compressed arrays
@@ -21,7 +22,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class CompressionSerDeTests extends BaseNd4jTest {
     public CompressionSerDeTests(Nd4jBackend backend) {
-            super(backend);
+        super(backend);
     }
 
 
@@ -52,7 +53,7 @@ public class CompressionSerDeTests extends BaseNd4jTest {
 
         assertEquals(true, compressed.isCompressed());
 
-//        assertEquals(true, compressed.data() instanceof CompressedDataBuffer);
+        //        assertEquals(true, compressed.data() instanceof CompressedDataBuffer);
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         Nd4j.write(bos, compressed);
@@ -61,9 +62,10 @@ public class CompressionSerDeTests extends BaseNd4jTest {
 
         INDArray result = Nd4j.read(bis);
 
-       // INDArray decomp = Nd4j.getCompressor().decompress(result);
+        assertTrue(result.isCompressed());
+        INDArray decomp = Nd4j.getCompressor().decompress(result);
 
-        assertArrayEquals(array.data().asFloat(), result.data().asFloat(), 0.1f);
+        assertArrayEquals(array.data().asFloat(), decomp.data().asFloat(), 0.1f);
     }
 
     @Test

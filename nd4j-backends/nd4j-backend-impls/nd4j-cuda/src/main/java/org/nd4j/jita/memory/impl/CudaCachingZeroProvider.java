@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class CudaCachingZeroProvider extends CudaDirectProvider implements MemoryProvider {
     private static Logger log = LoggerFactory.getLogger(CudaCachingZeroProvider.class);
 
-    protected final Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
     protected volatile ConcurrentHashMap<AllocationShape, CacheHolder> zeroCache = new ConcurrentHashMap<>();
 
     protected final AtomicLong cacheZeroHit = new AtomicLong(0);
@@ -53,17 +52,17 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
     protected final Semaphore singleLock = new Semaphore(1);
 
     // we don't cache allocations greater then this value
-    protected final long MAX_SINGLE_ALLOCATION = configuration.getMaximumHostCacheableLength();
+    //protected final long MAX_SINGLE_ALLOCATION = configuration.getMaximumHostCacheableLength();
 
     // maximum cached size of memory
-    protected final long MAX_CACHED_MEMORY = configuration.getMaximumHostCache();
+    //protected final long MAX_CACHED_MEMORY = configuration.getMaximumHostCache();
 
     // memory chunks below this threshold will be guaranteed regardless of number of cache entries
     // that especially covers all possible variations of shapeInfoDataBuffers in all possible cases
     protected final long FORCED_CACHE_THRESHOLD = 96;
 
     //  number of preallocation entries for each yet-unknown shape
-    protected final int PREALLOCATION_LIMIT = configuration.getPreallocationCalls();
+    //protected final int PREALLOCATION_LIMIT = configuration.getPreallocationCalls();
 
     public CudaCachingZeroProvider() {
 
@@ -83,12 +82,10 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
 
-        if (location == AllocationStatus.HOST  && reqMemory < MAX_SINGLE_ALLOCATION) {
-            if (allocRequests.incrementAndGet() % 100000 == 0)
-                printCacheStats();
+        if (location == AllocationStatus.HOST && reqMemory < CudaEnvironment.getInstance().getConfiguration().getMaximumHostCacheableLength()) {
 
             CacheHolder cache = zeroCache.get(shape);
-            if (cache != null ) {
+            if (cache != null) {
                 Pointer pointer = cache.poll();
                 if (pointer != null) {
                     cacheZeroHit.incrementAndGet();
@@ -106,8 +103,9 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             }
             cacheZeroMiss.incrementAndGet();
 
-            if (configuration.isUsePreallocation() && zeroCachedAmount.get() < MAX_CACHED_MEMORY / 10 && reqMemory < 16 * 1024 * 1024L) {
-                CachePreallocator preallocator = new CachePreallocator(shape, location, PREALLOCATION_LIMIT);
+            if (CudaEnvironment.getInstance().getConfiguration().isUsePreallocation() && zeroCachedAmount.get() < CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache() / 10
+                            && reqMemory < 16 * 1024 * 1024L) {
+                CachePreallocator preallocator = new CachePreallocator(shape, location, CudaEnvironment.getInstance().getConfiguration().getPreallocationCalls());
                 preallocator.start();
             }
 
@@ -152,12 +150,15 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
 
             // we don't cache too big objects
-            if (reqMemory > MAX_SINGLE_ALLOCATION || zeroCachedAmount.get() >= MAX_CACHED_MEMORY) {
+            if (reqMemory > CudaEnvironment.getInstance().getConfiguration().getMaximumHostCacheableLength() || zeroCachedAmount.get() >= CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache()) {
+                //log.info("HOST memory purging: {} bytes; MS: {}; MT: {}", reqMemory, MAX_SINGLE_ALLOCATION, MAX_CACHED_MEMORY);
                 super.free(point);
                 return;
             }
 
             ensureCacheHolder(shape);
+
+            //log.info("Saving DEVICE memory into cache...");
 
             /*
                 Now we should decide if this object can be cached or not
@@ -166,6 +167,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
             // memory chunks < threshold will be cached no matter what
             if (reqMemory <= FORCED_CACHE_THRESHOLD) {
+                Pointer.memset(point.getHostPointer(), 0, reqMemory);
                 cache.put(new CudaPointer(point.getHostPointer().address()));
             } else {
                 long cacheEntries = cache.size();
@@ -174,11 +176,12 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                 // total memory allocated within this bucket
                 long cacheDepth = cacheEntries * reqMemory;
 
-             //   if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
-                    cache.put(new CudaPointer(point.getHostPointer().address()));
-            //    } else {
-             //       super.free(point);
-            //    }
+                //   if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
+                Pointer.memset(point.getHostPointer(), 0, reqMemory);
+                cache.put(new CudaPointer(point.getHostPointer().address()));
+                //    } else {
+                //       super.free(point);
+                //    }
             }
         }
     }
@@ -195,6 +198,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
         return cacheRatio;
     }
 
+    @Deprecated
     public void printCacheStats() {
         log.debug("Cached host amount: " + zeroCachedAmount.get());
         log.debug("Cached device amount: " + deviceCachedAmount.get(0).get());
@@ -247,11 +251,11 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
         @Override
         public void run() {
-//            log.info("Precaching ["+target+"] chunks for shape: " + shape);
+            //            log.info("Precaching ["+target+"] chunks for shape: " + shape);
 
             ensureCacheHolder(shape);
 
-            for (int i = 0; i < target; i ++) {
+            for (int i = 0; i < target; i++) {
                 AllocationPoint point = new AllocationPoint();
 
                 PointersPair pair = CudaCachingZeroProvider.super.malloc(shape, point, this.location);
@@ -265,7 +269,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
     @Override
     public void purgeCache() {
-        for (AllocationShape shape: zeroCache.keySet()) {
+        for (AllocationShape shape : zeroCache.keySet()) {
             Pointer ptr = null;
             while ((ptr = zeroCache.get(shape).poll()) != null) {
                 freeHost(ptr);

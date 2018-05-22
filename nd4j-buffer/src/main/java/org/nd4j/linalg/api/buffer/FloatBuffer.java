@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,10 +20,13 @@
 package org.nd4j.linalg.api.buffer;
 
 
+import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
 
@@ -33,6 +36,7 @@ import java.nio.ByteBuffer;
  * @author Adam Gibson
  */
 public class FloatBuffer extends BaseDataBuffer {
+
     /**
      * Meant for creating another view of a buffer
      *
@@ -53,20 +57,24 @@ public class FloatBuffer extends BaseDataBuffer {
 
     }
 
-    public FloatBuffer(long length, boolean initialize){
+    public FloatBuffer(long length, boolean initialize) {
         super(length, initialize);
+    }
+
+    public FloatBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
+        super(length, initialize, workspace);
     }
 
     public FloatBuffer(int length, int elementSize) {
         super(length, elementSize);
     }
 
-    public FloatBuffer(int length, int elementSize, int offset) {
+    public FloatBuffer(int length, int elementSize, long offset) {
         super(length, elementSize, offset);
     }
 
     /**
-     * Initialize the type of this buffer
+     * Initialize the opType of this buffer
      */
     @Override
     protected void initTypeAndSize() {
@@ -82,35 +90,39 @@ public class FloatBuffer extends BaseDataBuffer {
         this(data, true);
     }
 
+    public FloatBuffer(float[] data, MemoryWorkspace workspace) {
+        this(data, true, workspace);
+    }
+
     public FloatBuffer(int[] data) {
-        this(data,true);
+        this(data, true);
     }
 
     public FloatBuffer(double[] data) {
-        this(data,true);
+        this(data, true);
     }
 
     public FloatBuffer(int[] data, boolean copyOnOps) {
         super(data, copyOnOps);
     }
 
-    public FloatBuffer(int[] data, boolean copy, int offset) {
+    public FloatBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
     public FloatBuffer(double[] data, boolean copyOnOps) {
-        super(data,copyOnOps);
+        super(data, copyOnOps);
     }
 
-    public FloatBuffer(double[] data, boolean copy, int offset) {
+    public FloatBuffer(double[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
-    public FloatBuffer(ByteBuffer buffer,int length) {
-        super(buffer,length);
+    public FloatBuffer(ByteBuffer buffer, int length) {
+        super(buffer, length);
     }
 
-    public FloatBuffer(ByteBuffer buffer, int length, int offset) {
+    public FloatBuffer(ByteBuffer buffer, int length, long offset) {
         super(buffer, length, offset);
     }
 
@@ -133,11 +145,17 @@ public class FloatBuffer extends BaseDataBuffer {
         super(floats, copy);
     }
 
-    public FloatBuffer(float[] data, boolean copy, int offset) {
+    public FloatBuffer(float[] floats, boolean copy, MemoryWorkspace workspace) {
+        super(floats, copy, workspace);
+    }
+
+    public FloatBuffer(float[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
-
+    public FloatBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
+        super(data, copy, offset, workspace);
+    }
 
     @Override
     protected DataBuffer create(long length) {

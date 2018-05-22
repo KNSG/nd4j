@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -22,10 +22,13 @@ package org.nd4j.linalg.util;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.util.SetUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 
 /**
@@ -37,15 +40,14 @@ public class MathUtils {
 
 
 
-
     /**
      * The natural logarithm of 2.
      */
-    public static double log2 = Math.log(2);
+    public static final double log2 = Math.log(2);
     /**
      * The small deviation allowed in double comparisons.
      */
-    public static double SMALL = 1e-6;
+    public static final double SMALL = 1e-6;
 
 
     public static double pow(double base, double exponent) {
@@ -58,7 +60,7 @@ public class MathUtils {
             return 1 / pow(base, exponent * -1);
         }
 
-        return FastMath.pow(base,exponent);
+        return FastMath.pow(base, exponent);
     }
 
     /**
@@ -86,8 +88,10 @@ public class MathUtils {
      * @return the discrete value
      */
     public static int clamp(int value, int min, int max) {
-        if (value < min) value = min;
-        if (value > max) value = max;
+        if (value < min)
+            value = min;
+        if (value > max)
+            value = max;
         return value;
     }
 
@@ -213,7 +217,39 @@ public class MathUtils {
             ret += Math.pow(targetAttribute[i] - predictedValues[i], 2);
         }
         return ret;
+    }
 
+    /**
+     * Calculate string similarity with tfidf weights relative to each character
+     * frequency and how many times a character appears in a given string
+     * @param strings the strings to calculate similarity for
+     * @return the cosine similarity between the strings
+     */
+    public static double stringSimilarity(String... strings) {
+        if (strings == null)
+            return 0;
+        Counter<String> counter = new Counter<>();
+        Counter<String> counter2 = new Counter<>();
+
+        for (int i = 0; i < strings[0].length(); i++)
+            counter.incrementCount(String.valueOf(strings[0].charAt(i)), 1.0f);
+
+        for (int i = 0; i < strings[1].length(); i++)
+            counter2.incrementCount(String.valueOf(strings[1].charAt(i)), 1.0f);
+        Set<String> v1 = counter.keySet();
+        Set<String> v2 = counter2.keySet();
+
+
+        Set<String> both = SetUtils.intersection(v1, v2);
+
+        double sclar = 0, norm1 = 0, norm2 = 0;
+        for (String k : both)
+            sclar += counter.getCount(k) * counter2.getCount(k);
+        for (String k : v1)
+            norm1 += counter.getCount(k) * counter.getCount(k);
+        for (String k : v2)
+            norm2 += counter2.getCount(k) * counter2.getCount(k);
+        return sclar / Math.sqrt(norm1 * norm2);
     }
 
     /**
@@ -269,7 +305,8 @@ public class MathUtils {
     }
 
     private static int charForLetter(char c) {
-        char[] chars = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
+        char[] chars = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+                        't', 'u', 'v', 'w', 'x', 'y', 'z'};
         for (int i = 0; i < chars.length; i++)
             if (chars[i] == c)
                 return i;
@@ -297,7 +334,8 @@ public class MathUtils {
     public static double sum(double[] nums) {
 
         double ret = 0;
-        for (double d : nums) ret += d;
+        for (double d : nums)
+            ret += d;
 
         return ret;
     }//end sum
@@ -311,7 +349,8 @@ public class MathUtils {
      */
     public static double[] mergeCoords(double[] x, double[] y) {
         if (x.length != y.length)
-            throw new IllegalArgumentException("Sample sizes must be the same for each data applyTransformToDestination.");
+            throw new IllegalArgumentException(
+                            "Sample sizes must be the same for each data applyTransformToDestination.");
         double[] ret = new double[x.length + y.length];
 
         for (int i = 0; i < x.length; i++) {
@@ -330,7 +369,8 @@ public class MathUtils {
      */
     public static List<Double> mergeCoords(List<Double> x, List<Double> y) {
         if (x.size() != y.size())
-            throw new IllegalArgumentException("Sample sizes must be the same for each data applyTransformToDestination.");
+            throw new IllegalArgumentException(
+                            "Sample sizes must be the same for each data applyTransformToDestination.");
 
         List<Double> ret = new ArrayList<Double>();
 
@@ -354,7 +394,7 @@ public class MathUtils {
         List<double[]> coords = coordSplit(vector);
         /* x vals */
         double[] x = coords.get(0);
-		/* y vals */
+        /* y vals */
         double[] y = coords.get(1);
 
 
@@ -417,11 +457,11 @@ public class MathUtils {
      */
     public static double[] weightsFor(double[] vector) {
 
-		/* split coordinate system */
+        /* split coordinate system */
         List<double[]> coords = coordSplit(vector);
-		/* x vals */
+        /* x vals */
         double[] x = coords.get(0);
-		/* y vals */
+        /* y vals */
         double[] y = coords.get(1);
 
 
@@ -492,7 +532,8 @@ public class MathUtils {
      * if the length is or or nums i null
      */
     public static double times(double[] nums) {
-        if (nums == null || nums.length == 0) return 0;
+        if (nums == null || nums.length == 0)
+            return 0;
         double ret = 1;
         for (int i = 0; i < nums.length; i++)
             ret *= nums[i];
@@ -507,11 +548,12 @@ public class MathUtils {
      * @return the sum of products for the given numbers
      */
     public static double sumOfProducts(double[]... nums) {
-        if (nums == null || nums.length < 1) return 0;
+        if (nums == null || nums.length < 1)
+            return 0;
         double sum = 0;
 
         for (int i = 0; i < nums.length; i++) {
-			/* The ith column for all of the rows */
+            /* The ith column for all of the rows */
             double[] column = column(i, nums);
             sum += times(column);
 
@@ -528,8 +570,7 @@ public class MathUtils {
      * for all of the arrays.
      * @throws IllegalArgumentException if the index is < 0
      */
-    private static double[] column(int column, double[]... nums)
-            throws IllegalArgumentException {
+    private static double[] column(int column, double[]... nums) throws IllegalArgumentException {
 
         double[] ret = new double[nums.length];
 
@@ -551,20 +592,23 @@ public class MathUtils {
      */
     public static List<double[]> coordSplit(double[] vector) {
 
-        if (vector == null) return null;
+        if (vector == null)
+            return null;
         List<double[]> ret = new ArrayList<double[]>();
-		/* x coordinates */
+        /* x coordinates */
         double[] xVals = new double[vector.length / 2];
-		/* y coordinates */
+        /* y coordinates */
         double[] yVals = new double[vector.length / 2];
-		/* current points */
+        /* current points */
         int xTracker = 0;
         int yTracker = 0;
         for (int i = 0; i < vector.length; i++) {
             //even value, x coordinate
-            if (i % 2 == 0) xVals[xTracker++] = vector[i];
-                //y coordinate
-            else yVals[yTracker++] = vector[i];
+            if (i % 2 == 0)
+                xVals[xTracker++] = vector[i];
+            //y coordinate
+            else
+                yVals[yTracker++] = vector[i];
         }
         ret.add(xVals);
         ret.add(yVals);
@@ -613,20 +657,23 @@ public class MathUtils {
      */
     public static List<double[]> coordSplit(List<Double> vector) {
 
-        if (vector == null) return null;
+        if (vector == null)
+            return null;
         List<double[]> ret = new ArrayList<double[]>();
-		/* x coordinates */
+        /* x coordinates */
         double[] xVals = new double[vector.size() / 2];
-		/* y coordinates */
+        /* y coordinates */
         double[] yVals = new double[vector.size() / 2];
-		/* current points */
+        /* current points */
         int xTracker = 0;
         int yTracker = 0;
         for (int i = 0; i < vector.size(); i++) {
             //even value, x coordinate
-            if (i % 2 == 0) xVals[xTracker++] = vector.get(i);
-                //y coordinate
-            else yVals[yTracker++] = vector.get(i);
+            if (i % 2 == 0)
+                xVals[xTracker++] = vector.get(i);
+            //y coordinate
+            else
+                yVals[yTracker++] = vector.get(i);
         }
         ret.add(xVals);
         ret.add(yVals);
@@ -644,11 +691,13 @@ public class MathUtils {
     public static double[] xVals(double[] vector) {
 
 
-        if (vector == null) return null;
+        if (vector == null)
+            return null;
         double[] x = new double[vector.length / 2];
         int count = 0;
         for (int i = 0; i < vector.length; i++) {
-            if (i % 2 != 0) x[count++] = vector[i];
+            if (i % 2 != 0)
+                x[count++] = vector[i];
         }
         return x;
     }//end xVals
@@ -663,7 +712,8 @@ public class MathUtils {
         double[] y = new double[vector.length / 2];
         int count = 0;
         for (int i = 0; i < vector.length; i++) {
-            if (i % 2 == 0) y[count++] = vector[i];
+            if (i % 2 == 0)
+                y[count++] = vector[i];
         }
         return y;
     }//end yVals
@@ -676,7 +726,8 @@ public class MathUtils {
      */
     public static double sumOfSquares(double[] vector) {
         double ret = 0;
-        for (double d : vector) ret += Math.pow(d, 2);
+        for (double d : vector)
+            ret += Math.pow(d, 2);
         return ret;
     }
 
@@ -732,7 +783,8 @@ public class MathUtils {
             return 0;
         else {
             double ret = 0;
-            for (double d : vector) ret += d * Math.log(d);
+            for (double d : vector)
+                ret += d * Math.log(d);
             return ret;
 
         }
@@ -874,7 +926,8 @@ public class MathUtils {
      * @return the factorial for this number
      */
     public static double factorial(double n) {
-        if (n == 1 || n == 0) return 1;
+        if (n == 1 || n == 0)
+            return 1;
         for (double i = n; i > 0; i--, n *= (i > 0 ? i : 1)) {
         }
         return n;
@@ -890,8 +943,7 @@ public class MathUtils {
     public static /*@pure@*/ double probToLogOdds(double prob) {
 
         if (gr(prob, 1) || (sm(prob, 0))) {
-            throw new IllegalArgumentException("probToLogOdds: probability must " +
-                    "be in [0,1] " + prob);
+            throw new IllegalArgumentException("probToLogOdds: probability must " + "be in [0,1] " + prob);
         }
         double p = SMALL + (1.0 - 2 * SMALL) * prob;
         return Math.log(p / (1 - p));
@@ -906,9 +958,7 @@ public class MathUtils {
      */
     public static /*@pure@*/ int round(double value) {
 
-        int roundedValue = value > 0
-                ? (int) (value + 0.5)
-                : -(int) (Math.abs(value) + 0.5);
+        int roundedValue = value > 0 ? (int) (value + 0.5) : -(int) (Math.abs(value) + 0.5);
 
         return roundedValue;
     }//end round
@@ -1104,7 +1154,7 @@ public class MathUtils {
     public static int toDecimal(String binary) {
         long num = Long.parseLong(binary);
         long rem;
-		/* Use the remainder method to ensure validity */
+        /* Use the remainder method to ensure validity */
         while (num > 0) {
             rem = num % 10;
             num = num / 10;
@@ -1144,7 +1194,8 @@ public class MathUtils {
                     binaryBuffer.append(first);
                     curr = curr.substring(1);
                     binaryReps.set(j, curr);
-                } else binaryReps.remove(j);
+                } else
+                    binaryReps.remove(j);
             }
         }
         return Integer.parseInt(binaryBuffer.toString(), 2);
@@ -1242,6 +1293,21 @@ public class MathUtils {
      *
      * @param begin the begin of the interval
      * @param end   the end of the interval
+     * @param anchor the base number (assuming to be generated from an external rng)
+     * @return an int between begin and end
+     */
+    public static int randomNumberBetween(double begin, double end,double anchor) {
+        if (begin > end)
+            throw new IllegalArgumentException("Begin must not be less than end");
+        return (int) begin + (int) (anchor * ((end - begin) + 1));
+    }
+
+
+    /**
+     * Generates a random integer between the specified numbers
+     *
+     * @param begin the begin of the interval
+     * @param end   the end of the interval
      * @return an int between begin and end
      */
     public static int randomNumberBetween(double begin, double end) {
@@ -1284,4 +1350,29 @@ public class MathUtils {
     public double slope(double x1, double x2, double y1, double y2) {
         return (y2 - y1) / (x2 - x1);
     }//end slope
+
+    public static void shuffleArray(int[] array, long rngSeed) {
+        shuffleArray(array, new Random(rngSeed));
+    }
+
+    public static void shuffleArray(int[] array, Random rng) {
+        //https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
+        for (int i = array.length - 1; i > 0; i--) {
+            int j = rng.nextInt(i + 1);
+            int temp = array[j];
+            array[j] = array[i];
+            array[i] = temp;
+        }
+    }
+
+    /**
+     * hashCode method, taken from Java 1.8 Double.hashCode(double) method
+     *
+     * @param value Double value to hash
+     * @return Hash code for the double value
+     */
+    public static int hashCode(double value) {
+        long bits = Double.doubleToLongBits(value);
+        return (int) (bits ^ (bits >>> 32));
+    }
 }

@@ -1,7 +1,5 @@
 package org.nd4j.linalg.api.ops.aggregates;
 
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -12,7 +10,7 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
-public abstract class BaseAggregate implements Aggregate {
+public abstract class   BaseAggregate implements Aggregate {
     protected List<INDArray> arguments = new ArrayList<>();
     protected List<DataBuffer> shapes = new ArrayList<>();
     protected List<int[]> intArrayArguments = new ArrayList<>();
@@ -61,7 +59,8 @@ public abstract class BaseAggregate implements Aggregate {
         result += maxArguments() * 8; // pointers
         result += maxShapes() * 8; // pointers
         result += maxIndexArguments() * 4;
-        result += maxRealArguments() * (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2);
+        result += maxRealArguments() * (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8
+                        : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2);
         result += 5 * 4; // numArgs
 
         return result * Batch.getBatchLimit();

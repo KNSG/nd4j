@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,12 +33,11 @@ import java.util.Collection;
 public class LogEntry extends DataBufferLogEntry {
 
     private String id;
-    private int[] shape;
-    private int[] stride;
+    private long[] shape;
+    private long[] stride;
     private String ndArrayType;
 
-    public LogEntry() {
-    }
+    public LogEntry() {}
 
     public LogEntry(INDArray toLog, String status) {
         //this.id = toLog.id();
@@ -78,21 +77,29 @@ public class LogEntry extends DataBufferLogEntry {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof LogEntry)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof LogEntry))
+            return false;
 
         LogEntry logEntry = (LogEntry) o;
 
-        if (length != logEntry.length) return false;
-        if (dataType != null ? !dataType.equals(logEntry.dataType) : logEntry.dataType != null) return false;
-        if (id != null ? !id.equals(logEntry.id) : logEntry.id != null) return false;
+        if (length != logEntry.length)
+            return false;
+        if (dataType != null ? !dataType.equals(logEntry.dataType) : logEntry.dataType != null)
+            return false;
+        if (id != null ? !id.equals(logEntry.id) : logEntry.id != null)
+            return false;
         if (ndArrayType != null ? !ndArrayType.equals(logEntry.ndArrayType) : logEntry.ndArrayType != null)
             return false;
         if (references != null ? !references.equals(logEntry.references) : logEntry.references != null)
             return false;
-        if (!Arrays.equals(shape, logEntry.shape)) return false;
-        if (!Arrays.equals(stackTraceElements, logEntry.stackTraceElements)) return false;
-        if (!Arrays.equals(stride, logEntry.stride)) return false;
+        if (!Arrays.equals(shape, logEntry.shape))
+            return false;
+        if (!Arrays.equals(stackTraceElements, logEntry.stackTraceElements))
+            return false;
+        if (!Arrays.equals(stride, logEntry.stride))
+            return false;
 
         return true;
     }
@@ -112,16 +119,10 @@ public class LogEntry extends DataBufferLogEntry {
 
     @Override
     public String toString() {
-        return "LogEntry{" +
-                "id='" + id + '\'' +
-                ", shape=" + Arrays.toString(shape) +
-                ", stride=" + Arrays.toString(stride) +
-                ", length=" + length +
-                ", ndArrayType='" + ndArrayType + '\'' +
-                ", references=" + references +
-                ", dataType='" + dataType + '\'' +
-                ", stackTraceElements=" + Arrays.toString(stackTraceElements) +
-                '}';
+        return "LogEntry{" + "id='" + id + '\'' + ", shape=" + Arrays.toString(shape) + ", stride="
+                        + Arrays.toString(stride) + ", length=" + length + ", ndArrayType='" + ndArrayType + '\''
+                        + ", references=" + references + ", dataType='" + dataType + '\'' + ", stackTraceElements="
+                        + Arrays.toString(stackTraceElements) + '}';
     }
 
     public String getId() {
@@ -132,19 +133,19 @@ public class LogEntry extends DataBufferLogEntry {
         this.id = id;
     }
 
-    public int[] getShape() {
+    public long[] getShape() {
         return shape;
     }
 
-    public void setShape(int[] shape) {
+    public void setShape(long[] shape) {
         this.shape = shape;
     }
 
-    public int[] getStride() {
+    public long[] getStride() {
         return stride;
     }
 
-    public void setStride(int[] stride) {
+    public void setStride(long[] stride) {
         this.stride = stride;
     }
 

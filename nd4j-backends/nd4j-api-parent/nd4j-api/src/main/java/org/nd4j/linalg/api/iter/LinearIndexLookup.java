@@ -11,22 +11,29 @@ import java.io.Serializable;
  */
 public class LinearIndexLookup implements Serializable {
     private char ordering;
-    private int[][] indexes;
-    private int[] shape;
+    private long[][] indexes;
+    private long[] shape;
     private boolean[] exists;
-    private int numIndexes;
+    private long numIndexes;
 
     /**
      *
      * @param shape the shape of the linear index
      * @param ordering the ordering of the linear index
      */
-    public LinearIndexLookup(int[] shape,char ordering) {
+    public LinearIndexLookup(int[] shape, char ordering) {
+        this(ArrayUtil.toLongArray(shape), ordering);
+    }
+
+
+    public LinearIndexLookup(long[] shape, char ordering) {
         this.shape = shape;
         this.ordering = ordering;
-        numIndexes = ArrayUtil.prod(shape);
-        indexes = new int[numIndexes][shape.length];
-        exists = new boolean[numIndexes];
+        numIndexes = ArrayUtil.prodLong(shape);
+
+        // FIMXE: long!
+        indexes = new long[(int) numIndexes][shape.length];
+        exists = new boolean[(int) numIndexes];
     }
 
     /**
@@ -35,13 +42,13 @@ public class LinearIndexLookup implements Serializable {
      * @param index the index
      * @return the sub for the given index
      */
-    public int[] lookup(int index) {
-        if(exists[index]) {
+    public long[] lookup(int index) {
+        if (exists[index]) {
             return indexes[index];
-        }
-        else {
+        } else {
             exists[index] = true;
-            indexes[index] = ordering == 'c' ? Shape.ind2subC(shape,index,numIndexes) : Shape.ind2sub(shape,index,numIndexes);
+            indexes[index] = ordering == 'c' ? Shape.ind2subC(shape, index, numIndexes)
+                            : Shape.ind2sub(shape, index, numIndexes);
             return indexes[index];
         }
     }

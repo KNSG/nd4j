@@ -34,8 +34,10 @@ public class HostPortPublisher implements AutoCloseable {
     private Aeron aeron;
     private Publication publication;
     private static Logger log = LoggerFactory.getLogger(AeronNDArrayPublisher.class);
+    private int publicationTimeout;
 
     private void init() {
+        publicationTimeout = publicationTimeout == 0 ? 100 : publicationTimeout;
         channel = channel == null ? "aeron:udp?endpoint=localhost:40123" : channel;
         streamId = streamId == 0 ? 10 : streamId;
         ctx = ctx == null ? ctx = new Aeron.Context() : ctx;
@@ -45,21 +47,20 @@ public class HostPortPublisher implements AutoCloseable {
 
 
     public void send() {
-        if(!init)
+        if (!init)
             init();
 
         // Create an Aeron instance with client-provided context configuration and connect to the
         // media driver, and create a Publication.  The Aeron and Publication classes implement
         // AutoCloseable, and will automatically clean up resources when this try block is finished.
-        if(aeron == null)
+        if (aeron == null)
             aeron = Aeron.connect(ctx);
 
-        while(publication == null) {
+        while (publication == null) {
             try {
                 publication = aeron.addPublication(channel, streamId);
                 log.info("Publication created on channel " + channel);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 log.warn("Trying to connect again on channel " + channel);
             }
         }
@@ -76,17 +77,23 @@ public class HostPortPublisher implements AutoCloseable {
                 log.info("Offer failed due to back pressure " + channel + " and stream " + streamId);
 
             else if (result == Publication.NOT_CONNECTED && timesFailed % 1000 == 0)
-                log.info("Offer failed because publisher is not connected to subscriber " + channel + " and stream " + streamId);
+                log.info("Offer failed because publisher is not connected to subscriber " + channel + " and stream "
+                                + streamId);
 
             else if (result == Publication.ADMIN_ACTION && timesFailed % 1000 == 0)
-                log.info("Offer failed because of an administration action in the system " + channel + " and stream " + streamId);
+                log.info("Offer failed because of an administration action in the system " + channel + " and stream "
+                                + streamId);
 
             else if (result == Publication.CLOSED && timesFailed % 1000 == 0)
                 log.info("Offer failed publication is closed " + channel + " and stream " + streamId);
 
-            else if(timesFailed % 1000 == 0)
+            else if (timesFailed % 1000 == 0)
                 log.info("Offer failed due to unknown reason on channel " + channel + " and stream " + streamId);
-            Thread.yield();
+            try {
+                Thread.sleep(publicationTimeout);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             timesFailed++;
 
         }
@@ -142,9 +149,7 @@ public class HostPortPublisher implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        if(aeron != null)
-            CloseHelper.quietClose(aeron);
-        if(publication != null)
+        if (publication != null)
             CloseHelper.quietClose(publication);
     }
 }

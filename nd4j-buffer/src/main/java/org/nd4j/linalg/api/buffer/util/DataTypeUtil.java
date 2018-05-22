@@ -7,7 +7,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Manipulates the data type
+ * Manipulates the data opType
  * for the nd4j context
  * @author Adam Gibson
  */
@@ -16,17 +16,49 @@ public class DataTypeUtil {
     private volatile transient static DataBuffer.Type dtype;
     private static final ReadWriteLock lock = new ReentrantReadWriteLock();
 
+
+    /**
+     * Returns the length for the given data opType
+     * @param type
+     * @return
+     */
+    public static int lengthForDtype(DataBuffer.Type type) {
+        switch (type) {
+            case DOUBLE:
+                return 8;
+            case FLOAT:
+                return 4;
+            case INT:
+                return 4;
+            case HALF:
+                return 2;
+            case LONG:
+                return 8;
+            case COMPRESSED:
+            default:
+                throw new IllegalArgumentException("Illegal opType for length");
+
+        }
+
+
+    }
+
     /**
      * Get the allocation mode from the context
      * @return
      */
-    public static  DataBuffer.Type getDtypeFromContext(String dType) {
-        switch(dType) {
-            case "double": return DataBuffer.Type.DOUBLE;
-            case "float": return DataBuffer.Type.FLOAT;
-            case "int": return DataBuffer.Type.INT;
-            case "half": return DataBuffer.Type.HALF;
-            default: return DataBuffer.Type.FLOAT;
+    public static DataBuffer.Type getDtypeFromContext(String dType) {
+        switch (dType) {
+            case "double":
+                return DataBuffer.Type.DOUBLE;
+            case "float":
+                return DataBuffer.Type.FLOAT;
+            case "int":
+                return DataBuffer.Type.INT;
+            case "half":
+                return DataBuffer.Type.HALF;
+            default:
+                return DataBuffer.Type.FLOAT;
         }
     }
 
@@ -36,12 +68,17 @@ public class DataTypeUtil {
      * @return
      */
     public static String getDTypeForName(DataBuffer.Type allocationMode) {
-        switch(allocationMode) {
-            case DOUBLE: return "double";
-            case FLOAT: return "float";
-            case INT: return "int";
-            case HALF: return "half";
-            default: return "float";
+        switch (allocationMode) {
+            case DOUBLE:
+                return "double";
+            case FLOAT:
+                return "float";
+            case INT:
+                return "int";
+            case HALF:
+                return "half";
+            default:
+                return "float";
         }
     }
 
@@ -95,9 +132,10 @@ public class DataTypeUtil {
      * @param allocationModeForContext
      */
     public static void setDTypeForContext(String allocationModeForContext) {
-        if(!allocationModeForContext.equals("double") && !allocationModeForContext.equals("float") && !allocationModeForContext.equals("int") && !allocationModeForContext.equals("half"))
+        if (!allocationModeForContext.equals("double") && !allocationModeForContext.equals("float")
+                        && !allocationModeForContext.equals("int") && !allocationModeForContext.equals("half"))
             throw new IllegalArgumentException("Allocation mode must be one of: double,float, or int");
-        Nd4jContext.getInstance().getConf().put("dtype",allocationModeForContext);
+        Nd4jContext.getInstance().getConf().put("dtype", allocationModeForContext);
     }
 
 

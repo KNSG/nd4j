@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,11 +19,16 @@
 
 package org.nd4j.linalg.api.rng.distribution.impl;
 
+import lombok.val;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
 import org.apache.commons.math3.exception.util.LocalizedFormats;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Iterator;
 
 /**
  * Base distribution derived from apache commons math
@@ -44,8 +49,7 @@ public class UniformDistribution extends BaseDistribution {
      * @param upper Upper bound of this distribution (exclusive).
      * @throws NumberIsTooLargeException if {@code lower >= upper}.
      */
-    public UniformDistribution(double lower, double upper)
-            throws NumberIsTooLargeException {
+    public UniformDistribution(double lower, double upper) throws NumberIsTooLargeException {
         this(Nd4j.getRandom(), lower, upper);
     }
 
@@ -59,15 +63,12 @@ public class UniformDistribution extends BaseDistribution {
      * @throws NumberIsTooLargeException if {@code lower >= upper}.
      * @since 3.1
      */
-    public UniformDistribution(org.nd4j.linalg.api.rng.Random rng,
-                               double lower,
-                               double upper)
-            throws NumberIsTooLargeException {
+    public UniformDistribution(org.nd4j.linalg.api.rng.Random rng, double lower, double upper)
+                    throws NumberIsTooLargeException {
         super(rng);
         if (lower >= upper) {
-            throw new NumberIsTooLargeException(
-                    LocalizedFormats.LOWER_BOUND_NOT_BELOW_UPPER_BOUND,
-                    lower, upper, false);
+            throw new NumberIsTooLargeException(LocalizedFormats.LOWER_BOUND_NOT_BELOW_UPPER_BOUND, lower, upper,
+                            false);
         }
 
         this.lower = lower;
@@ -103,8 +104,7 @@ public class UniformDistribution extends BaseDistribution {
     }
 
     @Override
-    public double inverseCumulativeProbability(final double p)
-            throws OutOfRangeException {
+    public double inverseCumulativeProbability(final double p) throws OutOfRangeException {
         if (p < 0.0 || p > 1.0) {
             throw new OutOfRangeException(p, 0, 1);
         }
@@ -188,5 +188,27 @@ public class UniformDistribution extends BaseDistribution {
     public double sample() {
         final double u = random.nextDouble();
         return u * upper + (1 - u) * lower;
+    }
+
+
+    @Override
+    public INDArray sample(int[] shape) {
+        final INDArray ret = Nd4j.createUninitialized(shape, Nd4j.order());
+        return sample(ret);
+    }
+
+    @Override
+    public INDArray sample(INDArray ret) {
+        if (random.getStatePointer() != null) {
+            return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.UniformDistribution(
+                    ret, lower, upper), random);
+        } else {
+            val idxIter = new NdIndexIterator(ret.shape()); //For consistent values irrespective of c vs. fortran ordering
+            long len = ret.length();
+            for (int i = 0; i < len; i++) {
+                ret.putScalar(idxIter.next(), sample());
+            }
+            return ret;
+        }
     }
 }

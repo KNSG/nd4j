@@ -1,10 +1,13 @@
 package org.nd4j.linalg.dataset;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -12,12 +15,13 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
+@Slf4j
 @RunWith(Parameterized.class)
 public class MultiDataSetTest extends BaseNd4jTest {
     public MultiDataSetTest(Nd4jBackend backend) {
@@ -34,8 +38,10 @@ public class MultiDataSetTest extends BaseNd4jTest {
 
         INDArray[] in = new INDArray[nRows];
         INDArray[] out = new INDArray[nRows];
-        for (int i = 0; i < nRows; i++) in[i] = expIn.getRow(i).dup();
-        for (int i = 0; i < nRows; i++) out[i] = expOut.getRow(i).dup();
+        for (int i = 0; i < nRows; i++)
+            in[i] = expIn.getRow(i).dup();
+        for (int i = 0; i < nRows; i++)
+            out[i] = expOut.getRow(i).dup();
 
         List<MultiDataSet> list = new ArrayList<>(nRows);
         for (int i = 0; i < nRows; i++) {
@@ -73,14 +79,14 @@ public class MultiDataSetTest extends BaseNd4jTest {
                 INDArray in1 = expIn1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
                 INDArray out0 = expOut0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
                 INDArray out1 = expOut1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
-                list.add(new MultiDataSet(new INDArray[]{in0, in1}, new INDArray[]{out0, out1}));
+                list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
                 i++;
             } else {
                 INDArray in0 = expIn0.getRow(i).dup();
                 INDArray in1 = expIn1.getRow(i).dup();
                 INDArray out0 = expOut0.getRow(i).dup();
                 INDArray out1 = expOut1.getRow(i).dup();
-                list.add(new MultiDataSet(new INDArray[]{in0, in1}, new INDArray[]{out0, out1}));
+                list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
             }
         }
 
@@ -92,6 +98,102 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(expIn1, merged.getFeatures(1));
         assertEquals(expOut0, merged.getLabels(0));
         assertEquals(expOut1, merged.getLabels(1));
+    }
+
+    @Test
+    public void testMerging2dMultipleInOut2() {
+        //Test merging: Multiple input/output arrays; 5 MultiDataSets to merge
+
+        int nRows = 10;
+        int nColsIn0 = 3;
+        int nColsIn1 = 4;
+        int nColsIn2 = 5;
+        int nColsOut0 = 6;
+        int nColsOut1 = 7;
+        int nColsOut2 = 8;
+
+        INDArray expIn0 = Nd4j.linspace(0, nRows * nColsIn0 - 1, nRows * nColsIn0).reshape(nRows, nColsIn0);
+        INDArray expIn1 = Nd4j.linspace(0, nRows * nColsIn1 - 1, nRows * nColsIn1).reshape(nRows, nColsIn1);
+        INDArray expIn2 = Nd4j.linspace(0, nRows * nColsIn2 - 1, nRows * nColsIn2).reshape(nRows, nColsIn2);
+        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0).reshape(nRows, nColsOut0);
+        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1).reshape(nRows, nColsOut1);
+        INDArray expOut2 = Nd4j.linspace(0, nRows * nColsOut2 - 1, nRows * nColsOut2).reshape(nRows, nColsOut2);
+
+        List<MultiDataSet> list = new ArrayList<>(nRows);
+        for (int i = 0; i < nRows; i++) {
+            if (i == 0) {
+                //For first MultiDataSet: have 2 rows, not just 1
+                INDArray in0 = expIn0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                INDArray in1 = expIn1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                INDArray in2 = expIn2.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                INDArray out0 = expOut0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                INDArray out1 = expOut1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                INDArray out2 = expOut2.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                list.add(new MultiDataSet(new INDArray[] {in0, in1, in2}, new INDArray[] {out0, out1, out2}));
+                i++;
+            } else {
+                INDArray in0 = expIn0.getRow(i).dup();
+                INDArray in1 = expIn1.getRow(i).dup();
+                INDArray in2 = expIn2.getRow(i).dup();
+                INDArray out0 = expOut0.getRow(i).dup();
+                INDArray out1 = expOut1.getRow(i).dup();
+                INDArray out2 = expOut2.getRow(i).dup();
+                list.add(new MultiDataSet(new INDArray[] {in0, in1, in2}, new INDArray[] {out0, out1, out2}));
+            }
+        }
+
+        MultiDataSet merged = MultiDataSet.merge(list);
+        assertEquals(3, merged.getFeatures().length);
+        assertEquals(3, merged.getLabels().length);
+
+        assertEquals(expIn0, merged.getFeatures(0));
+        assertEquals(expIn1, merged.getFeatures(1));
+        assertEquals(expIn2, merged.getFeatures(2));
+        assertEquals(expOut0, merged.getLabels(0));
+        assertEquals(expOut1, merged.getLabels(1));
+        assertEquals(expOut2, merged.getLabels(2));
+    }
+
+    @Test
+    public void testMerging2dMultipleInOut3() {
+        //Test merging: fewer rows than output arrays...
+
+        int nRows = 2;
+        int nColsIn0 = 3;
+        int nColsIn1 = 4;
+        int nColsIn2 = 5;
+        int nColsOut0 = 6;
+        int nColsOut1 = 7;
+        int nColsOut2 = 8;
+
+        INDArray expIn0 = Nd4j.linspace(0, nRows * nColsIn0 - 1, nRows * nColsIn0).reshape(nRows, nColsIn0);
+        INDArray expIn1 = Nd4j.linspace(0, nRows * nColsIn1 - 1, nRows * nColsIn1).reshape(nRows, nColsIn1);
+        INDArray expIn2 = Nd4j.linspace(0, nRows * nColsIn2 - 1, nRows * nColsIn2).reshape(nRows, nColsIn2);
+        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0).reshape(nRows, nColsOut0);
+        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1).reshape(nRows, nColsOut1);
+        INDArray expOut2 = Nd4j.linspace(0, nRows * nColsOut2 - 1, nRows * nColsOut2).reshape(nRows, nColsOut2);
+
+        List<MultiDataSet> list = new ArrayList<>(nRows);
+        for (int i = 0; i < nRows; i++) {
+            INDArray in0 = expIn0.getRow(i).dup();
+            INDArray in1 = expIn1.getRow(i).dup();
+            INDArray in2 = expIn2.getRow(i).dup();
+            INDArray out0 = expOut0.getRow(i).dup();
+            INDArray out1 = expOut1.getRow(i).dup();
+            INDArray out2 = expOut2.getRow(i).dup();
+            list.add(new MultiDataSet(new INDArray[] {in0, in1, in2}, new INDArray[] {out0, out1, out2}));
+        }
+
+        MultiDataSet merged = MultiDataSet.merge(list);
+        assertEquals(3, merged.getFeatures().length);
+        assertEquals(3, merged.getLabels().length);
+
+        assertEquals(expIn0, merged.getFeatures(0));
+        assertEquals(expIn1, merged.getFeatures(1));
+        assertEquals(expIn2, merged.getFeatures(2));
+        assertEquals(expOut0, merged.getLabels(0));
+        assertEquals(expOut1, merged.getLabels(1));
+        assertEquals(expOut2, merged.getLabels(2));
     }
 
     @Test
@@ -119,18 +221,22 @@ public class MultiDataSetTest extends BaseNd4jTest {
         for (int i = 0; i < nRows; i++) {
             if (i == 0) {
                 //For first MultiDataSet: have 2 rows, not just 1
-                INDArray in0 = expIn0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).dup();
-                INDArray in1 = expIn1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).dup();
+                INDArray in0 = expIn0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.all()).dup();
+                INDArray in1 = expIn1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.all()).dup();
                 INDArray out0 = expOut0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
                 INDArray out1 = expOut1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
-                list.add(new MultiDataSet(new INDArray[]{in0, in1}, new INDArray[]{out0, out1}));
+                list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
                 i++;
             } else {
-                INDArray in0 = expIn0.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).dup();
-                INDArray in1 = expIn1.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).dup();
+                INDArray in0 = expIn0.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.all()).dup();
+                INDArray in1 = expIn1.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.all()).dup();
                 INDArray out0 = expOut0.getRow(i).dup();
                 INDArray out1 = expOut1.getRow(i).dup();
-                list.add(new MultiDataSet(new INDArray[]{in0, in1}, new INDArray[]{out0, out1}));
+                list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
             }
         }
 
@@ -166,18 +272,26 @@ public class MultiDataSetTest extends BaseNd4jTest {
         for (int i = 0; i < nRows; i++) {
             if (i == 0) {
                 //For first MultiDataSet: have 2 rows, not just 1
-                INDArray in0 = expIn0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
-                INDArray in1 = expIn1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
-                INDArray out0 = expOut0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
-                INDArray out1 = expOut1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
-                list.add(new MultiDataSet(new INDArray[]{in0, in1}, new INDArray[]{out0, out1}));
+                INDArray in0 = expIn0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all())
+                                .dup();
+                INDArray in1 = expIn1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all())
+                                .dup();
+                INDArray out0 = expOut0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all())
+                                .dup();
+                INDArray out1 = expOut1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all())
+                                .dup();
+                list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
                 i++;
             } else {
-                INDArray in0 = expIn0.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
-                INDArray in1 = expIn1.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
-                INDArray out0 = expOut0.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
-                INDArray out1 = expOut1.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
-                list.add(new MultiDataSet(new INDArray[]{in0, in1}, new INDArray[]{out0, out1}));
+                INDArray in0 = expIn0.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all())
+                                .dup();
+                INDArray in1 = expIn1.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all())
+                                .dup();
+                INDArray out0 = expOut0.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all())
+                                .dup();
+                INDArray out1 = expOut1.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all())
+                                .dup();
+                list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
             }
         }
 
@@ -240,30 +354,38 @@ public class MultiDataSetTest extends BaseNd4jTest {
             INDArray maskIn0 = null;
             INDArray maskIn1 = Nd4j.zeros(1, thisRowIn1Length);
             for (int j = 0; j < thisRowIn1Length; j++) {
-                if (r.nextBoolean()) maskIn1.putScalar(j, 1.0);
+                if (r.nextBoolean())
+                    maskIn1.putScalar(j, 1.0);
             }
             INDArray maskOut0 = null;
             INDArray maskOut1 = Nd4j.zeros(1, thisRowOut1Length);
             for (int j = 0; j < thisRowOut1Length; j++) {
-                if (r.nextBoolean()) maskOut1.putScalar(j, 1.0);
+                if (r.nextBoolean())
+                    maskOut1.putScalar(j, 1.0);
             }
 
-            expectedIn0.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.interval(0, thisRowIn0Length)}, in0);
-            expectedIn1.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.interval(0, thisRowIn1Length)}, in1);
-            expectedOut0.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.interval(0, thisRowOut0Length)}, out0);
-            expectedOut1.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.interval(0, thisRowOut1Length)}, out1);
+            expectedIn0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, thisRowIn0Length)}, in0);
+            expectedIn1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, thisRowIn1Length)}, in1);
+            expectedOut0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, thisRowOut0Length)}, out0);
+            expectedOut1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, thisRowOut1Length)}, out1);
 
-            expectedMaskIn0.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn0Length)},
-                    Nd4j.ones(1, thisRowIn0Length));
-            expectedMaskIn1.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn1Length)},
-                    maskIn1);
-            expectedMaskOut0.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut0Length)},
-                    Nd4j.ones(1, thisRowOut0Length));
-            expectedMaskOut1.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut1Length)},
-                    maskOut1);
+            expectedMaskIn0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn0Length)},
+                            Nd4j.ones(1, thisRowIn0Length));
+            expectedMaskIn1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn1Length)},
+                            maskIn1);
+            expectedMaskOut0.put(
+                            new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut0Length)},
+                            Nd4j.ones(1, thisRowOut0Length));
+            expectedMaskOut1.put(
+                            new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut1Length)},
+                            maskOut1);
 
-            list.add(new MultiDataSet(new INDArray[]{in0, in1}, new INDArray[]{out0, out1}, new INDArray[]{maskIn0, maskIn1},
-                    new INDArray[]{maskOut0, maskOut1}));
+            list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1},
+                            new INDArray[] {maskIn0, maskIn1}, new INDArray[] {maskOut0, maskOut1}));
         }
 
         MultiDataSet merged = MultiDataSet.merge(list);
@@ -285,40 +407,137 @@ public class MultiDataSetTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testSplit(){
+    public void testMergingWithPerOutputMasking() {
 
-        INDArray[] features = new INDArray[2];
-        features[0] = Nd4j.linspace(1,30,30).reshape('c',3,10);
-        features[1] = Nd4j.linspace(1,300,300).reshape('c',3,10,10);
+        //Test 2d mask merging, 2d data
+        //features
+        INDArray f2d1 = Nd4j.create(new double[] {1, 2, 3});
+        INDArray f2d2 = Nd4j.create(new double[][] {{4, 5, 6}, {7, 8, 9}});
+        //labels
+        INDArray l2d1 = Nd4j.create(new double[] {1.5, 2.5, 3.5});
+        INDArray l2d2 = Nd4j.create(new double[][] {{4.5, 5.5, 6.5}, {7.5, 8.5, 9.5}});
+        //feature masks
+        INDArray fm2d1 = Nd4j.create(new double[] {0, 1, 1});
+        INDArray fm2d2 = Nd4j.create(new double[][] {{1, 0, 1}, {0, 1, 0}});
+        //label masks
+        INDArray lm2d1 = Nd4j.create(new double[] {1, 1, 0});
+        INDArray lm2d2 = Nd4j.create(new double[][] {{1, 0, 0}, {0, 1, 1}});
 
-        INDArray[] labels = new INDArray[2];
-        labels[0] = Nd4j.linspace(1,30,30).reshape('c',3,10).addi(0.5);
-        labels[1] = Nd4j.linspace(1,300,300).reshape('c',3,10,10).addi(0.3);
+        MultiDataSet mds2d1 = new MultiDataSet(f2d1, l2d1, fm2d1, lm2d1);
+        MultiDataSet mds2d2 = new MultiDataSet(f2d2, l2d2, fm2d2, lm2d2);
+        MultiDataSet merged = MultiDataSet.merge(Arrays.asList(mds2d1, mds2d2));
 
-        INDArray[] fMask = new INDArray[2];
-        fMask[1] = Nd4j.linspace(1,30,30).reshape('f',3,10);
+        INDArray expFeatures2d = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+        INDArray expLabels2d = Nd4j.create(new double[][] {{1.5, 2.5, 3.5}, {4.5, 5.5, 6.5}, {7.5, 8.5, 9.5}});
+        INDArray expFM2d = Nd4j.create(new double[][] {{0, 1, 1}, {1, 0, 1}, {0, 1, 0}});
+        INDArray expLM2d = Nd4j.create(new double[][] {{1, 1, 0}, {1, 0, 0}, {0, 1, 1}});
 
-        INDArray[] lMask = new INDArray[2];
-        lMask[1] = Nd4j.linspace(1,30,30).reshape('f',3,10).addi(0.5);
+        MultiDataSet mdsExp2d = new MultiDataSet(expFeatures2d, expLabels2d, expFM2d, expLM2d);
+        assertEquals(mdsExp2d, merged);
+
+        //Test 4d features, 2d labels, 2d masks
+        INDArray f4d1 = Nd4j.create(1, 3, 5, 5);
+        INDArray f4d2 = Nd4j.create(2, 3, 5, 5);
+        MultiDataSet mds4d1 = new MultiDataSet(f4d1, l2d1, null, lm2d1);
+        MultiDataSet mds4d2 = new MultiDataSet(f4d2, l2d2, null, lm2d2);
+        MultiDataSet merged4d = MultiDataSet.merge(Arrays.asList(mds4d1, mds4d2));
+        assertEquals(expLabels2d, merged4d.getLabels(0));
+        assertEquals(expLM2d, merged4d.getLabelsMaskArray(0));
+
+        //Test 3d mask merging, 3d data
+        INDArray f3d1 = Nd4j.create(1, 3, 4);
+        INDArray f3d2 = Nd4j.create(1, 3, 3);
+        INDArray l3d1 = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.create(1, 3, 4), 0.5));
+        INDArray l3d2 = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.create(2, 3, 3), 0.5));
+        INDArray lm3d1 = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.create(1, 3, 4), 0.5));
+        INDArray lm3d2 = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.create(2, 3, 3), 0.5));
+        MultiDataSet mds3d1 = new MultiDataSet(f3d1, l3d1, null, lm3d1);
+        MultiDataSet mds3d2 = new MultiDataSet(f3d2, l3d2, null, lm3d2);
+
+        INDArray expLabels3d = Nd4j.create(3, 3, 4);
+        expLabels3d.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
+                        l3d1);
+        expLabels3d.put(new INDArrayIndex[] {NDArrayIndex.interval(1, 2, true), NDArrayIndex.all(),
+                        NDArrayIndex.interval(0, 3)}, l3d2);
+        INDArray expLM3d = Nd4j.create(3, 3, 4);
+        expLM3d.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
+                        lm3d1);
+        expLM3d.put(new INDArrayIndex[] {NDArrayIndex.interval(1, 2, true), NDArrayIndex.all(),
+                        NDArrayIndex.interval(0, 3)}, lm3d2);
+
+
+        MultiDataSet merged3d = MultiDataSet.merge(Arrays.asList(mds3d1, mds3d2));
+        assertEquals(expLabels3d, merged3d.getLabels(0));
+        assertEquals(expLM3d, merged3d.getLabelsMaskArray(0));
+
+        //Test 3d features, 2d masks, 2d output (for example: RNN -> global pooling w/ per-output masking)
+        MultiDataSet mds3d2d1 = new MultiDataSet(f3d1, l2d1, null, lm2d1);
+        MultiDataSet mds3d2d2 = new MultiDataSet(f3d2, l2d2, null, lm2d2);
+        MultiDataSet merged3d2d = MultiDataSet.merge(Arrays.asList(mds3d2d1, mds3d2d2));
+
+        assertEquals(expLabels2d, merged3d2d.getLabels(0));
+        assertEquals(expLM2d, merged3d2d.getLabelsMaskArray(0));
+    }
+
+    @Test
+    public void testSplit() {
+
+        INDArray[] features = new INDArray[3];
+        features[0] = Nd4j.linspace(1, 30, 30).reshape('c', 3, 10);
+        features[1] = Nd4j.linspace(1, 300, 300).reshape('c', 3, 10, 10);
+        features[2] = Nd4j.linspace(1, 3 * 5 * 10 * 10, 3 * 5 * 10 * 10).reshape('c', 3, 5, 10, 10);
+
+        INDArray[] labels = new INDArray[3];
+        labels[0] = Nd4j.linspace(1, 30, 30).reshape('c', 3, 10).addi(0.5);
+        labels[1] = Nd4j.linspace(1, 300, 300).reshape('c', 3, 10, 10).addi(0.3);
+        labels[2] = Nd4j.linspace(1, 3 * 5 * 10 * 10, 3 * 5 * 10 * 10).reshape('c', 3, 5, 10, 10).addi(0.1);
+
+        INDArray[] fMask = new INDArray[3];
+        fMask[1] = Nd4j.linspace(1, 30, 30).reshape('f', 3, 10);
+
+        INDArray[] lMask = new INDArray[3];
+        lMask[1] = Nd4j.linspace(1, 30, 30).reshape('f', 3, 10).addi(0.5);
 
         MultiDataSet mds = new MultiDataSet(features, labels, fMask, lMask);
 
         List<org.nd4j.linalg.dataset.api.MultiDataSet> list = mds.asList();
 
         assertEquals(3, list.size());
-        for( int i=0; i<3; i++ ){
+        for (int i = 0; i < 3; i++) {
             MultiDataSet m = (MultiDataSet) list.get(i);
-            assertEquals(features[0].get(NDArrayIndex.point(i),NDArrayIndex.all()), m.getFeatures(0));
-            assertEquals(features[1].get(NDArrayIndex.point(i),NDArrayIndex.all(), NDArrayIndex.all()), m.getFeatures(1));
+            assertEquals(2, m.getFeatures(0).rank());
+            assertEquals(3, m.getFeatures(1).rank());
+            assertEquals(4, m.getFeatures(2).rank());
 
-            assertEquals(labels[0].get(NDArrayIndex.point(i),NDArrayIndex.all()), m.getLabels(0));
-            assertEquals(labels[1].get(NDArrayIndex.point(i),NDArrayIndex.all(), NDArrayIndex.all()), m.getLabels(1));
+            assertArrayEquals(new long[] {1, 10}, m.getFeatures(0).shape());
+            assertArrayEquals(new long[] {1, 10, 10}, m.getFeatures(1).shape());
+            assertArrayEquals(new long[] {1, 5, 10, 10}, m.getFeatures(2).shape());
+
+            assertEquals(features[0].get(NDArrayIndex.point(i), NDArrayIndex.all()), m.getFeatures(0));
+            assertEquals(features[1].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all()),
+                            m.getFeatures(1));
+            assertEquals(features[2].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(),
+                            NDArrayIndex.all()), m.getFeatures(2));
+
+            assertEquals(2, m.getLabels(0).rank());
+            assertEquals(3, m.getLabels(1).rank());
+            assertEquals(4, m.getLabels(2).rank());
+
+            assertArrayEquals(new long[] {1, 10}, m.getLabels(0).shape());
+            assertArrayEquals(new long[] {1, 10, 10}, m.getLabels(1).shape());
+            assertArrayEquals(new long[] {1, 5, 10, 10}, m.getLabels(2).shape());
+
+            assertEquals(labels[0].get(NDArrayIndex.point(i), NDArrayIndex.all()), m.getLabels(0));
+            assertEquals(labels[1].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all()),
+                            m.getLabels(1));
+            assertEquals(labels[2].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(),
+                            NDArrayIndex.all()), m.getLabels(2));
 
             assertNull(m.getFeaturesMaskArray(0));
-            assertEquals(fMask[1].get(NDArrayIndex.point(i),NDArrayIndex.all()), m.getFeaturesMaskArray(1));
+            assertEquals(fMask[1].get(NDArrayIndex.point(i), NDArrayIndex.all()), m.getFeaturesMaskArray(1));
 
             assertNull(m.getLabelsMaskArray(0));
-            assertEquals(lMask[1].get(NDArrayIndex.point(i),NDArrayIndex.all()), m.getLabelsMaskArray(1));
+            assertEquals(lMask[1].get(NDArrayIndex.point(i), NDArrayIndex.all()), m.getLabelsMaskArray(1));
         }
     }
 
@@ -371,30 +590,38 @@ public class MultiDataSetTest extends BaseNd4jTest {
             INDArray maskIn0 = null;
             INDArray maskIn1 = Nd4j.zeros(1, thisRowIn1Length);
             for (int j = 0; j < thisRowIn1Length; j++) {
-                if (r.nextBoolean()) maskIn1.putScalar(j, 1.0);
+                if (r.nextBoolean())
+                    maskIn1.putScalar(j, 1.0);
             }
             INDArray maskOut0 = null;
             INDArray maskOut1 = Nd4j.zeros(1, thisRowOut1Length);
             for (int j = 0; j < thisRowOut1Length; j++) {
-                if (r.nextBoolean()) maskOut1.putScalar(j, 1.0);
+                if (r.nextBoolean())
+                    maskOut1.putScalar(j, 1.0);
             }
 
-            expectedIn0.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.interval(0, thisRowIn0Length)}, in0);
-            expectedIn1.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.interval(0, thisRowIn1Length)}, in1);
-            expectedOut0.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.interval(0, thisRowOut0Length)}, out0);
-            expectedOut1.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.interval(0, thisRowOut1Length)}, out1);
+            expectedIn0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, thisRowIn0Length)}, in0);
+            expectedIn1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, thisRowIn1Length)}, in1);
+            expectedOut0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, thisRowOut0Length)}, out0);
+            expectedOut1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, thisRowOut1Length)}, out1);
 
-            expectedMaskIn0.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn0Length)},
-                    Nd4j.ones(1, thisRowIn0Length));
-            expectedMaskIn1.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn1Length)},
-                    maskIn1);
-            expectedMaskOut0.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut0Length)},
-                    Nd4j.ones(1, thisRowOut0Length));
-            expectedMaskOut1.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut1Length)},
-                    maskOut1);
+            expectedMaskIn0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn0Length)},
+                            Nd4j.ones(1, thisRowIn0Length));
+            expectedMaskIn1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn1Length)},
+                            maskIn1);
+            expectedMaskOut0.put(
+                            new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut0Length)},
+                            Nd4j.ones(1, thisRowOut0Length));
+            expectedMaskOut1.put(
+                            new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut1Length)},
+                            maskOut1);
 
-            list.add(new MultiDataSet(new INDArray[]{in0, in1}, new INDArray[]{out0, out1}, new INDArray[]{maskIn0, maskIn1},
-                    new INDArray[]{maskOut0, maskOut1}));
+            list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1},
+                            new INDArray[] {maskIn0, maskIn1}, new INDArray[] {maskOut0, maskOut1}));
         }
 
         MultiDataSet merged = MultiDataSet.merge(list);
@@ -404,39 +631,39 @@ public class MultiDataSetTest extends BaseNd4jTest {
     @Test
     public void multiDataSetSaveLoadTest() throws IOException {
 
-        int max = 2;
+        int max = 3;
 
         Nd4j.getRandom().setSeed(12345);
 
-        for( int numF=0; numF <= max; numF++){
-            for( int numL=0; numL <= max; numL++ ){
+        for (int numF = 0; numF <= max; numF++) {
+            for (int numL = 0; numL <= max; numL++) {
                 INDArray[] f = (numF > 0 ? new INDArray[numF] : null);
                 INDArray[] l = (numL > 0 ? new INDArray[numL] : null);
                 INDArray[] fm = (numF > 0 ? new INDArray[numF] : null);
                 INDArray[] lm = (numL > 0 ? new INDArray[numL] : null);
 
                 if (numF > 0) {
-                    for( int i=0; i<f.length; i++ ){
-                        f[i] = Nd4j.rand(new int[]{3,4,5});
+                    for (int i = 0; i < f.length; i++) {
+                        f[i] = Nd4j.rand(new int[] {3, 4, 5});
                     }
                 }
-                if(numL > 0){
-                    for( int i=0; i<l.length; i++ ){
-                        l[i] = Nd4j.rand(new int[]{2,3,4});
+                if (numL > 0) {
+                    for (int i = 0; i < l.length; i++) {
+                        l[i] = Nd4j.rand(new int[] {2, 3, 4});
                     }
                 }
-                if(numF > 0){
-                    for( int i=0; i<fm.length; i++ ){
-                        fm[i] = Nd4j.rand(new int[]{3,5});
+                if (numF > 0) {
+                    for (int i = 0; i < Math.min(fm.length, 2); i++) {
+                        fm[i] = Nd4j.rand(new int[] {3, 5});
                     }
                 }
-                if(numL > 0){
-                    for( int i=0; i<lm.length; i++ ){
-                        lm[i] = Nd4j.rand(new int[]{2,4});
+                if (numL > 0) {
+                    for (int i = 0; i < Math.min(lm.length, 2); i++) {
+                        lm[i] = Nd4j.rand(new int[] {2, 4});
                     }
                 }
 
-                MultiDataSet mds = new MultiDataSet(f,l,fm,lm);
+                MultiDataSet mds = new MultiDataSet(f, l, fm, lm);
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 DataOutputStream dos = new DataOutputStream(baos);
@@ -451,8 +678,7 @@ public class MultiDataSetTest extends BaseNd4jTest {
                 MultiDataSet mds2 = new MultiDataSet();
                 mds2.load(dis);
 
-
-                assertEquals(mds, mds2);
+                assertEquals("Failed at [" + numF + "]/[" + numL + "]",mds, mds2);
             }
         }
     }

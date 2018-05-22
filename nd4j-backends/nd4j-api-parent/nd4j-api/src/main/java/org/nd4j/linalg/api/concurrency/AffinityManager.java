@@ -8,6 +8,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface AffinityManager {
 
+    enum Location {
+        HOST, DEVICE, EVERYWHERE,
+    }
+
     /**
      * This method returns deviceId for current thread
      * @return
@@ -22,12 +26,20 @@ public interface AffinityManager {
     Integer getDeviceForThread(Thread thread);
 
     /**
-     * This method returns
+     * This method returns deviceId for specified threadId
      *
      * @param threadId
      * @return
      */
     Integer getDeviceForThread(long threadId);
+
+    /**
+     * This method returns id of current device for a given INDArray
+     *
+     * @param array
+     * @return
+     */
+    Integer getDeviceForArray(INDArray array);
 
     /**
      * This method attaches specified thread to specified device
@@ -36,6 +48,7 @@ public interface AffinityManager {
      * @param deviceId
      */
     void attachThreadToDevice(Thread thread, Integer deviceId);
+
 
     /**
      * This method attaches specified thread (by Id) to specified device
@@ -82,4 +95,56 @@ public interface AffinityManager {
      * @return
      */
     DataBuffer replicateToDevice(Integer deviceId, DataBuffer buffer);
+
+    /**
+     * This method tags specific INDArray as "recent" on specified location
+     *
+     * @param location
+     */
+    void tagLocation(INDArray array, Location location);
+
+    /**
+     * This method tags specific DataBuffer as "recent" on specified location
+     *
+     * @param location
+     */
+    void tagLocation(DataBuffer buffer, Location location);
+
+
+    /**
+     * This method propagates given INDArray to specified location
+     *
+     * @param array
+     * @param location
+     */
+    void ensureLocation(INDArray array, Location location);
+
+    /**
+     * This method returns last-updated location for the given INDArray
+     * @param array
+     * @return
+     */
+    Location getActiveLocation(INDArray array);
+
+    /**
+     * This method forces specific device for current thread.
+     *
+     * PLEASE NOTE: This method is UNSAFE and should NOT be used with 100% clearance about it.
+     *
+     * @param deviceId
+     */
+    void unsafeSetDevice(Integer deviceId);
+
+
+    /**
+     * This method returns TRUE if cross-device access is allowed on this system
+     */
+    boolean isCrossDeviceAccessSupported();
+
+    /**
+     * This method allows to block cross-device access. Mostly suitable for debugging/testing purposes
+     *
+     * @param reallyAllow
+     */
+    void allowCrossDeviceAccess(boolean reallyAllow);
 }

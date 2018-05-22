@@ -1,6 +1,6 @@
 package jcuda.jcublas.ops;
 
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -15,7 +15,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by raver on 08.05.2016.

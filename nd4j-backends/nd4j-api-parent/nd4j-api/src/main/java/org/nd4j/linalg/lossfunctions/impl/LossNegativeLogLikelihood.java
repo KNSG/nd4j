@@ -9,11 +9,25 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class LossNegativeLogLikelihood extends LossMCXENT {
 
-    public LossNegativeLogLikelihood() {
-    }
+    public LossNegativeLogLikelihood() {}
 
     public LossNegativeLogLikelihood(INDArray weights) {
         super(weights);
+    }
+
+    /**
+     * The opName of this function
+     *
+     * @return
+     */
+    @Override
+    public String name() {
+        return toString();
+    }
+
+    @Override
+    public String opName() {
+        return "lossnegativeloglikelihood";
     }
 
     @Override

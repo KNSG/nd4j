@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -47,10 +47,10 @@ public class NotEqualsCondition extends BaseCondition {
 
     @Override
     public Boolean apply(Number input) {
-        if (Nd4j.dtype == DataBuffer.Type.DOUBLE)
-            return input.doubleValue() == value.doubleValue();
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
+            return input.doubleValue() != value.doubleValue();
         else
-            return input.floatValue() == value.floatValue();
+            return input.floatValue() != value.floatValue();
     }
 
     @Override

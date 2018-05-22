@@ -6,7 +6,15 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 /**Boolean condition on absolute value: abs(x) > value
  */
 public class AbsValueGreaterThan extends BaseCondition {
-    public AbsValueGreaterThan(Number value){
+
+    /**
+     * Special constructor for pairwise boolean operations.
+     */
+    public AbsValueGreaterThan() {
+        super(0.0);
+    }
+
+    public AbsValueGreaterThan(Number value) {
         super(value);
     }
 

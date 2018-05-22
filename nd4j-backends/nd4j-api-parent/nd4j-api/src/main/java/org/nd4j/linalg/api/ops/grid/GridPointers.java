@@ -6,7 +6,8 @@ import lombok.NoArgsConstructor;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.BaseOp;
+import org.nd4j.linalg.api.ops.Op;
 
 /**
  * POJO describing OP
@@ -32,13 +33,13 @@ public class GridPointers {
 
 
     // strides
-    private int xStride = -1;
-    private int yStride = -1;
-    private int zStride = -1;
+    private long xStride = -1;
+    private long yStride = -1;
+    private long zStride = -1;
 
-    private int xLength = 0;
-    private int yLength = 0;
-    private int zLength = 0;
+    private long xLength = 0;
+    private long yLength = 0;
+    private long zLength = 0;
 
     private char xOrder;
     private char yOrder;

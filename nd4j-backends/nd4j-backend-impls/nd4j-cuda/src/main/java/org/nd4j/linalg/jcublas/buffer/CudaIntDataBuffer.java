@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -22,7 +22,7 @@ package org.nd4j.linalg.jcublas.buffer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
@@ -53,15 +53,23 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(length, 4);
     }
 
-    public CudaIntDataBuffer(long length, boolean initialize){
+    public CudaIntDataBuffer(long length, MemoryWorkspace workspace) {
+        super(length, 4, workspace);
+    }
+
+    public CudaIntDataBuffer(long length, boolean initialize) {
         super(length, 4, initialize);
+    }
+
+    public CudaIntDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
+        super(length, 4, initialize, workspace);
     }
 
     public CudaIntDataBuffer(long length, int elementSize) {
         super(length, elementSize);
     }
 
-    public CudaIntDataBuffer(long length, int elementSize, int offset) {
+    public CudaIntDataBuffer(long length, int elementSize, long offset) {
         super(length, elementSize, offset);
     }
 
@@ -74,11 +82,20 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         setData(data);
     }
 
+    public CudaIntDataBuffer(int[] data, MemoryWorkspace workspace) {
+        this(data.length, workspace);
+        setData(data);
+    }
+
     public CudaIntDataBuffer(int[] data, boolean copy) {
         super(data, copy);
     }
 
-    public CudaIntDataBuffer(int[] data, boolean copy, int offset) {
+    public CudaIntDataBuffer(int[] data, boolean copy, MemoryWorkspace workspace) {
+        super(data, copy, workspace);
+    }
+
+    public CudaIntDataBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -95,7 +112,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaIntDataBuffer(double[] data, boolean copy, int offset) {
+    public CudaIntDataBuffer(double[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -107,7 +124,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaIntDataBuffer(float[] data, boolean copy, int offset) {
+    public CudaIntDataBuffer(float[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -115,7 +132,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(buffer, length);
     }
 
-    public CudaIntDataBuffer(ByteBuffer buffer, int length, int offset) {
+    public CudaIntDataBuffer(ByteBuffer buffer, int length, long offset) {
         super(buffer, length, offset);
     }
 
@@ -124,7 +141,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                            + length() + " where the indices are of length " + data.length);
 
         if (!contiguous)
             throw new UnsupportedOperationException("Non contiguous is not supported");
@@ -136,7 +154,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                            + length() + " where the indices are of length " + data.length);
 
         if (!contiguous)
             throw new UnsupportedOperationException("Non contiguous is not supported");
@@ -165,8 +184,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         return new CudaIntDataBuffer(data);
     }
 
-    private void writeObject(java.io.ObjectOutputStream stream)
-            throws java.io.IOException {
+    private void writeObject(java.io.ObjectOutputStream stream) throws java.io.IOException {
         stream.defaultWriteObject();
 
         if (getHostPointer() == null) {
@@ -182,7 +200,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     /**
-     * Initialize the type of this buffer
+     * Initialize the opType of this buffer
      */
     @Override
     protected void initTypeAndSize() {
@@ -192,8 +210,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
 
 
-    private void readObject(java.io.ObjectInputStream stream)
-            throws java.io.IOException, ClassNotFoundException {
+    private void readObject(java.io.ObjectInputStream stream) throws java.io.IOException, ClassNotFoundException {
         stream.defaultReadObject();
 
         int n = stream.readInt();

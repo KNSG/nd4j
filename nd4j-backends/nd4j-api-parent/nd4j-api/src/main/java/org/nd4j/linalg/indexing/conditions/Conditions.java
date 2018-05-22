@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,6 +20,7 @@
 package org.nd4j.linalg.indexing.conditions;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Static class for conditions
@@ -39,7 +40,7 @@ public class Conditions {
     }
 
     public static Condition epsEquals(IComplexNumber value) {
-        return new EqualsCondition(value);
+        return new EpsilonEquals(value);
     }
 
     public static Condition epsNotEquals(Number value) {
@@ -47,7 +48,11 @@ public class Conditions {
     }
 
     public static Condition epsEquals(Number value) {
-        return new EqualsCondition(value);
+        return epsEquals(value, Nd4j.EPS_THRESHOLD);
+    }
+
+    public static Condition epsEquals(Number value, Number epsilon) {
+        return new EpsilonEquals(value, epsilon.doubleValue());
     }
 
 
@@ -92,16 +97,24 @@ public class Conditions {
         return new GreaterThanOrEqual(value);
     }
 
-    /**
-     *@deprecated 0.6.0 Typo - use {@link #greaterThanOrEqual(Number)}
-     */
-    @Deprecated
-    public static Condition greaterThanOEqual(Number value) {
+    public static Condition greaterThanOrEqual(Number value) {
         return new GreaterThanOrEqual(value);
     }
 
-    public static Condition greaterThanOrEqual(Number value) {
-        return new GreaterThanOrEqual(value);
+    public static Condition absGreaterThanOrEqual(Number value) {
+        return new AbsValueGreaterOrEqualsThan(value);
+    }
+
+    public static Condition absLessThanOrEqual(Number value) {
+        return new AbsValueLessOrEqualsThan(value);
+    }
+
+    public static Condition absGreaterThan(Number value) {
+        return new AbsValueGreaterThan(value);
+    }
+
+    public static Condition absLessThan(Number value) {
+        return new AbsValueLessThan(value);
     }
 
 }

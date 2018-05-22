@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,12 +19,19 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import lombok.val;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.util.ComplexUtil;
+import org.nd4j.linalg.factory.Nd4j;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Pow function
@@ -35,6 +42,24 @@ public class Pow extends BaseTransformOp {
     private double pow;
 
     public Pow() {
+    }
+
+    public Pow(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double pow) {
+        super(sameDiff, i_v, inPlace);
+        this.pow = pow;
+        this.extraArgs = new Object[]{pow};
+    }
+
+    public Pow(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double pow) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.pow = pow;
+        this.extraArgs = new Object[]{pow};
+    }
+
+    public Pow(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double pow) {
+        super(sameDiff, i_v, extraArgs);
+        this.pow = pow;
+        this.extraArgs = new Object[]{pow};
     }
 
     public Pow(INDArray x, INDArray z, double pow) {
@@ -69,76 +94,45 @@ public class Pow extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "pow";
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.pow(origin, pow);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.pow(origin, pow);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.pow(origin, pow);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return (float) FastMath.pow(origin, pow);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return FastMath.pow(origin, pow);
-    }
-
-    @Override
-    public double op(double origin) {
-        return FastMath.pow(origin, pow);
-    }
-
-    @Override
-    public float op(float origin) {
-        return (float) FastMath.pow(origin, pow);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.pow(origin, pow);
-    }
-
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Pow(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), pow);
-        else
-            return new Pow(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), pow);
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Pow(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), pow);
-        else
-            return new Pow(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), pow);
-
-    }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x,y,z,n);
+        super.init(x, y, z, n);
         this.extraArgs = new Object[]{pow};
     }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        val weightsName = nodeDef.getInput(1);
+        val variable = initWith.getVariable(weightsName);
+        val tmp = initWith.getArrForVarName(weightsName);
+
+        // if second argument is scalar - we should provide array of same shape
+        if (tmp != null) {
+            if (tmp.isScalar()) {
+                this.pow = tmp.getDouble(0);
+            }
+        }
+    }
+
+    @Override
+    public String onnxName() {
+        return "Pow";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "Pow";
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+        SDVariable g = f().powDerivative(arg(), this.pow).mul(i_v1.get(0));
+        return Arrays.asList(g);
+    }
+
 }

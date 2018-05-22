@@ -1,25 +1,26 @@
 package org.nd4j.linalg.compression;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.reflections.Reflections;
 
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class BasicNDArrayCompressor {
     private static final BasicNDArrayCompressor INSTANCE = new BasicNDArrayCompressor();
 
     protected Map<String, NDArrayCompressor> codecs;
 
-    protected String defaultCompression = "FP16";
+    protected String defaultCompression = "FLOAT16";
 
     private BasicNDArrayCompressor() {
         loadCompressors();
@@ -30,18 +31,19 @@ public class BasicNDArrayCompressor {
             We scan classpath for NDArrayCompressor implementations and add them one by one to codecs map
          */
         codecs = new ConcurrentHashMap<>();
-        Reflections reflections = new Reflections("org.nd4j");
-        Set<Class<? extends NDArrayCompressor>> classes = reflections.getSubTypesOf(NDArrayCompressor.class);
-        for (Class<? extends NDArrayCompressor> impl : classes) {
-            try {
-                NDArrayCompressor compressor = impl.newInstance();
 
-                codecs.put(compressor.getDescriptor().toUpperCase(), compressor);
-            } catch (InstantiationException i) {
-                ; // we need catch there, to avoid exceptions at abstract classes
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        ServiceLoader<NDArrayCompressor> loader = ServiceLoader.load(NDArrayCompressor.class);
+        for (NDArrayCompressor compressor : loader) {
+            codecs.put(compressor.getDescriptor().toUpperCase(), compressor);
+        }
+
+        if(codecs.isEmpty()){
+            //No compressors found - bad uber-jar?
+            String msg = "Error loading ND4J Compressors via service loader: No compressors were found. This usually occurs" +
+                    " when running ND4J UI from an uber-jar, which was built incorrectly (without services resource" +
+                    " files being included)";
+            log.error(msg);
+            throw new RuntimeException(msg);
         }
     }
 
@@ -83,8 +85,8 @@ public class BasicNDArrayCompressor {
      */
     public BasicNDArrayCompressor setDefaultCompression(@NonNull String algorithm) {
         algorithm = algorithm.toUpperCase();
- //       if (!codecs.containsKey(algorithm))
-//            throw new RuntimeException("Non-existent compression algorithm requested: [" + algorithm + "]");
+        //       if (!codecs.containsKey(algorithm))
+        //            throw new RuntimeException("Non-existent compression algorithm requested: [" + algorithm + "]");
 
         synchronized (this) {
             defaultCompression = algorithm;
@@ -132,8 +134,7 @@ public class BasicNDArrayCompressor {
     }
 
     public INDArray compress(INDArray array) {
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         return compress(array, getDefaultCompression());
     }
@@ -191,9 +192,14 @@ public class BasicNDArrayCompressor {
         CompressionDescriptor descriptor = comp.getCompressionDescriptor();
 
         if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))
-            throw new RuntimeException("Non-existent compression algorithm requested: [" + descriptor.getCompressionAlgorithm() + "]");
+            throw new RuntimeException("Non-existent compression algorithm requested: ["
+                            + descriptor.getCompressionAlgorithm() + "]");
 
         return codecs.get(descriptor.getCompressionAlgorithm()).decompress(buffer);
+    }
+
+    public NDArrayCompressor getCompressor(@NonNull String name) {
+        return codecs.get(name);
     }
 
     /**
@@ -209,7 +215,8 @@ public class BasicNDArrayCompressor {
         CompressionDescriptor descriptor = comp.getCompressionDescriptor();
 
         if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))
-            throw new RuntimeException("Non-existent compression algorithm requested: [" + descriptor.getCompressionAlgorithm() + "]");
+            throw new RuntimeException("Non-existent compression algorithm requested: ["
+                            + descriptor.getCompressionAlgorithm() + "]");
 
         return codecs.get(descriptor.getCompressionAlgorithm()).decompress(array);
     }
@@ -229,9 +236,10 @@ public class BasicNDArrayCompressor {
         CompressionDescriptor descriptor = comp.getCompressionDescriptor();
 
         if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))
-            throw new RuntimeException("Non-existent compression algorithm requested: [" + descriptor.getCompressionAlgorithm() + "]");
+            throw new RuntimeException("Non-existent compression algorithm requested: ["
+                            + descriptor.getCompressionAlgorithm() + "]");
 
-         codecs.get(descriptor.getCompressionAlgorithm()).decompressi(array);
+        codecs.get(descriptor.getCompressionAlgorithm()).decompressi(array);
     }
 
     /**
@@ -239,7 +247,7 @@ public class BasicNDArrayCompressor {
      * @param arrays
      */
     public void autoDecompress(INDArray... arrays) {
-        for (INDArray array: arrays) {
+        for (INDArray array : arrays) {
             autoDecompress(array);
         }
     }

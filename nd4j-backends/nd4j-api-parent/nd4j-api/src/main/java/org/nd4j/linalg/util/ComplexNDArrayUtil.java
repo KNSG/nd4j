@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -67,7 +67,7 @@ public class ComplexNDArrayUtil {
      * @return the center portion of the array based on the
      * specified shape
      */
-    public static IComplexNDArray center(IComplexNDArray arr, int[] shape) {
+    public static IComplexNDArray center(IComplexNDArray arr, long[] shape) {
         if (arr.length() < ArrayUtil.prod(shape))
             return arr;
         for (int i = 0; i < shape.length; i++)
@@ -86,7 +86,7 @@ public class ComplexNDArrayUtil {
 
 
         else {
-            IComplexNDArray ret = Nd4j.createComplex(new int[]{(int) shapeMatrix.getDouble(0)});
+            IComplexNDArray ret = Nd4j.createComplex(new int[] {(int) shapeMatrix.getDouble(0)});
             int start = (int) startIndex.getDouble(0);
             int end = (int) endIndex.getDouble(0);
             int count = 0;
@@ -113,7 +113,7 @@ public class ComplexNDArrayUtil {
 
 
         if (nd.isVector()) {
-            IComplexNDArray truncated = Nd4j.createComplex(new int[]{1,n});
+            IComplexNDArray truncated = Nd4j.createComplex(new int[] {1, n});
             for (int i = 0; i < n; i++)
                 truncated.putScalar(i, nd.getComplex(i));
 
@@ -122,13 +122,13 @@ public class ComplexNDArrayUtil {
 
 
         if (nd.size(dimension) > n) {
-            int[] shape = ArrayUtil.copy(nd.shape());
+            long[] shape = ArrayUtil.copy(nd.shape());
             shape[dimension] = n;
             IComplexNDArray ret = Nd4j.createComplex(shape);
             IComplexNDArray ndLinear = nd.linearView();
             IComplexNDArray retLinear = ret.linearView();
-            for(int i = 0; i < ret.length(); i++)
-                retLinear.putScalar(i,ndLinear.getComplex(i));
+            for (int i = 0; i < ret.length(); i++)
+                retLinear.putScalar(i, ndLinear.getComplex(i));
             return ret;
 
         }
@@ -144,7 +144,7 @@ public class ComplexNDArrayUtil {
      * @param targetShape the the new shape
      * @return the padded ndarray
      */
-    public static IComplexNDArray padWithZeros(IComplexNDArray nd, int[] targetShape) {
+    public static IComplexNDArray padWithZeros(IComplexNDArray nd, long[] targetShape) {
         if (Arrays.equals(nd.shape(), targetShape))
             return nd;
         //no padding required
@@ -153,7 +153,7 @@ public class ComplexNDArrayUtil {
 
         IComplexNDArray ret = Nd4j.createComplex(targetShape);
         INDArrayIndex[] targetShapeIndex = NDArrayIndex.createCoveringShape(nd.shape());
-        ret.put(targetShapeIndex,nd);
+        ret.put(targetShapeIndex, nd);
         return ret;
 
     }

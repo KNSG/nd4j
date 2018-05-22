@@ -1,11 +1,9 @@
 package org.nd4j.linalg.dataset.api.iterator.cache;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -16,8 +14,8 @@ public class InFileDataSetCache implements DataSetCache {
 
     public InFileDataSetCache(File cacheDirectory) {
         if (cacheDirectory.exists() && !cacheDirectory.isDirectory()) {
-            throw new IllegalArgumentException("can't use path " + cacheDirectory + " as file cache directory " +
-                    "because it already exists, but is not a directory");
+            throw new IllegalArgumentException("can't use path " + cacheDirectory + " as file cache directory "
+                            + "because it already exists, but is not a directory");
         }
         this.cacheDirectory = cacheDirectory;
     }
@@ -54,7 +52,7 @@ public class InFileDataSetCache implements DataSetCache {
                 parentFile.mkdirs();
                 try {
                     file.createNewFile();
-                } catch(IOException e) {
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }

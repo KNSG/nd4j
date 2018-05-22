@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -55,5 +55,10 @@ public class Not implements Condition {
     @Override
     public Boolean apply(IComplexNumber input) {
         return !opposite.apply(input);
+    }
+
+    @Override
+    public double epsThreshold() {
+        return 0;
     }
 }

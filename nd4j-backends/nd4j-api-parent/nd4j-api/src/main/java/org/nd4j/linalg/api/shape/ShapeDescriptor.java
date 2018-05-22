@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.shape;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 
 /**
@@ -7,29 +9,29 @@ import java.util.Arrays;
  */
 public class ShapeDescriptor {
 
-    private char order;
-    private int offset;
-    private int ews;
+    @Getter private char order;
+    @Getter private long offset;
+    @Getter private int ews;
     private long hashShape = 0;
     private long hashStride = 0;
 
-    private int[] shape;
-    private int[] stride;
+    @Getter private int[] shape;
+    @Getter private int[] stride;
 
-    public ShapeDescriptor(int[] shape, int[] stride, int offset, int ews, char order) {
+    public ShapeDescriptor(int[] shape, int[] stride, long offset, int ews, char order) {
         /*
         if (shape != null) {
             hashShape = shape[0];
             for (int i = 1; i < shape.length; i++)
                 hashShape = 31 * hashShape + shape[i];
         }
-
+        
         if (stride != null) {
             hashStride = stride[0];
             for (int i = 1; i < stride.length; i++)
                 hashStride = 31 * hashStride + stride[i];
         }
-*/
+        */
         this.shape = Arrays.copyOf(shape, shape.length);
         this.stride = Arrays.copyOf(stride, stride.length);
 
@@ -40,15 +42,21 @@ public class ShapeDescriptor {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         ShapeDescriptor that = (ShapeDescriptor) o;
 
-        if (order != that.order) return false;
-        if (offset != that.offset) return false;
-        if (ews != that.ews) return false;
-        if (!Arrays.equals(shape, that.shape)) return false;
+        if (order != that.order)
+            return false;
+        if (offset != that.offset)
+            return false;
+        if (ews != that.ews)
+            return false;
+        if (!Arrays.equals(shape, that.shape))
+            return false;
         return Arrays.equals(stride, that.stride);
 
     }
@@ -56,7 +64,8 @@ public class ShapeDescriptor {
     @Override
     public int hashCode() {
         int result = (int) order;
-        result = 31 * result + offset;
+        // FIXME: LONG
+        result = 31 * result + (int) offset;
         result = 31 * result + ews;
         result = 31 * result + Arrays.hashCode(shape);
         result = 31 * result + Arrays.hashCode(stride);
@@ -68,9 +77,11 @@ public class ShapeDescriptor {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append(shape.length).append(",").append(Arrays.toString(shape)).append(",").append(Arrays.toString(stride)).append(",").append(offset).append(",").append(ews).append(",").append(order);
+        builder.append(shape.length).append(",").append(Arrays.toString(shape)).append(",")
+                        .append(Arrays.toString(stride)).append(",").append(offset).append(",").append(ews).append(",")
+                        .append(order);
 
-        String result = builder.toString().replaceAll("\\]","").replaceAll("\\[","");
+        String result = builder.toString().replaceAll("\\]", "").replaceAll("\\[", "");
         result = "[" + result + "]";
 
         return result;

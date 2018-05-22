@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -68,5 +68,10 @@ public class Or implements Condition {
             ret = conditions[i].apply(input);
         }
         return ret;
+    }
+
+    @Override
+    public double epsThreshold() {
+        return 0;
     }
 }

@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.ACos;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -27,9 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Test suit for simple Half-precision execution
@@ -189,7 +188,7 @@ public class HalfOpsTests {
         INDArray array1 = Nd4j.zeros(15);
         array1.putScalar(0, 0.9f);
 
-        Nd4j.getExecutioner().exec(new SoftMax(array1));
+        Nd4j.getExecutioner().exec(new OldSoftMax(array1));
 
         System.out.println("Array1: " + array1);
 
@@ -300,7 +299,7 @@ public class HalfOpsTests {
         array.addi(am);
 
         array.divi(0.5f);
-        ((CudaGridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
         Thread.sleep(1000);
 
         assertArrayEquals(exp3.data().asFloat(), am.data().asFloat(), 0.001f);

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -22,6 +22,7 @@ package org.nd4j.linalg.jcublas.buffer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.ByteArrayOutputStream;
@@ -55,9 +56,14 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(length, 4);
     }
 
-    public CudaFloatDataBuffer(long length, boolean initialize){
+    public CudaFloatDataBuffer(long length, boolean initialize) {
         super(length, 4, initialize);
     }
+
+    public CudaFloatDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
+        super(length, 4, initialize, workspace);
+    }
+
 
     public CudaFloatDataBuffer(long length, int elementSize) {
         super(length, elementSize);
@@ -68,7 +74,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     }
 
     /**
-     * Initialize the type of this buffer
+     * Initialize the opType of this buffer
      */
     @Override
     protected void initTypeAndSize() {
@@ -88,8 +94,16 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaFloatDataBuffer(float[] data, boolean copy, int offset) {
+    public CudaFloatDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
+        super(data, copy, workspace);
+    }
+
+    public CudaFloatDataBuffer(float[] data, boolean copy, long offset) {
         super(data, copy, offset);
+    }
+
+    public CudaFloatDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
+        super(data, copy, offset, workspace);
     }
 
     public CudaFloatDataBuffer(double[] data) {
@@ -100,7 +114,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaFloatDataBuffer(double[] data, boolean copy, int offset) {
+    public CudaFloatDataBuffer(double[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -112,7 +126,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaFloatDataBuffer(int[] data, boolean copy, int offset) {
+    public CudaFloatDataBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -124,7 +138,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(buffer, (int) length);
     }
 
-    public CudaFloatDataBuffer(ByteBuffer buffer, long length, int offset) {
+    public CudaFloatDataBuffer(ByteBuffer buffer, long length, long offset) {
         super(buffer, length, offset);
     }
 
@@ -134,10 +148,11 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                            + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
-         /*   long offset = indices[0];
+            /*   long offset = indices[0];
             Pointer p = Pointer.to(data);
             set(offset, data.length, p, inc);
             */
@@ -152,7 +167,8 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                            + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             /*long offset = indices[0];
@@ -193,7 +209,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         float[] data = asFloat();
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        for(int i = 0; i < data.length; i++)
+        for (int i = 0; i < data.length; i++)
             try {
                 dos.writeFloat(data[i]);
             } catch (IOException e) {

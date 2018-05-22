@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -28,7 +28,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 /**
- *
  * @author Susan Eraly
  */
 public class BaseNDArrayProxy implements java.io.Serializable {
@@ -38,46 +37,47 @@ public class BaseNDArrayProxy implements java.io.Serializable {
      * Be it cpu or gpu
      */
 
-    protected int[] arrayShape;
+    protected long[] arrayShape;
     protected long length;
-	protected char arrayOrdering;
-    protected transient  DataBuffer data;    
+    protected char arrayOrdering;
+    protected transient DataBuffer data;
 
     public BaseNDArrayProxy(INDArray anInstance) {
-		this.arrayShape = anInstance.shape();
-		this.length = anInstance.length();
-		this.arrayOrdering = anInstance.ordering();
-		this.data =  anInstance.data();
-        if(anInstance.isView()){
-            char instanceOrdering = anInstance.ordering();
-            INDArray dupInstance = anInstance.dup(instanceOrdering);
-            this.data = dupInstance.data();
-		}
+        if (anInstance.isView()) {
+            anInstance = anInstance.dup(anInstance.ordering());
+        }
+        this.arrayShape = anInstance.shape();
+        this.length = anInstance.length();
+        this.arrayOrdering = anInstance.ordering();
+        this.data = anInstance.data();
     }
-	// READ DONE HERE - return an NDArray using the available backend
-	private Object readResolve() throws java.io.ObjectStreamException {
-        return Nd4j.create(this.data,this.arrayShape);
+
+    // READ DONE HERE - return an NDArray using the available backend
+    private Object readResolve() throws java.io.ObjectStreamException {
+        return Nd4j.create(data, arrayShape, Nd4j.getStrides(arrayShape, arrayOrdering), 0, arrayOrdering);
     }
+
     private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
         try {
-			//Should have array shape and ordering here
+            //Should have array shape and ordering here
             s.defaultReadObject();
-			//Need to call deser explicitly on data buffer
+            //Need to call deser explicitly on data buffer
             read(s);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
     }
+
     //Custom deserialization for Java serialization
     protected void read(ObjectInputStream s) throws IOException, ClassNotFoundException {
-        data = Nd4j.createBuffer(length,false);
+        data = Nd4j.createBuffer(length, false);
         data.read(s);
     }
 
-	// WRITE DONE HERE
+    // WRITE DONE HERE
     private void writeObject(ObjectOutputStream out) throws IOException {
-		//takes care of everything but data buffer
+        //takes care of everything but data buffer
         out.defaultWriteObject();
         write(out);
     }

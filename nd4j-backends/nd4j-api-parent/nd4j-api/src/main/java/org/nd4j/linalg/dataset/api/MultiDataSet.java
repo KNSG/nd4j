@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * MultiDataSet is an interface for representing complex data sets, that have (potentially) multiple inputs and outputs
  * For example, some complex neural network architectures may have multiple independent inputs, and multiple independent
- * outputs. These inputs and outputs need not even be the same type of data: for example, images in and sequences out, etc
+ * outputs. These inputs and outputs need not even be the same opType of data: for example, images in and sequences out, etc
  */
 public interface MultiDataSet extends Serializable {
 
@@ -130,12 +130,18 @@ public interface MultiDataSet extends Serializable {
     void load(File from) throws IOException;
 
     /**
-     * Split the MultiDataSet into a list of individual examples.
+     * SplitV the MultiDataSet into a list of individual examples.
      *
      * @return List of MultiDataSets, each with 1 example
      */
     List<MultiDataSet> asList();
 
+    /**
+     * Clone the dataset
+     *
+     * @return a clone of the dataset
+     */
+    MultiDataSet copy();
 
     /**
      * Set the metadata for this MultiDataSet<br>
@@ -149,7 +155,7 @@ public interface MultiDataSet extends Serializable {
      * Get the example metadata, or null if no metadata has been set<br>
      * Note: this method results in an unchecked cast - care should be taken when using this!
      *
-     * @param metaDataType Class of the metadata (used for type information)
+     * @param metaDataType Class of the metadata (used for opType information)
      * @param <T>          Type of metadata
      * @return List of metadata objects
      */
@@ -163,4 +169,31 @@ public interface MultiDataSet extends Serializable {
      */
     List<Serializable> getExampleMetaData();
 
+    /**
+     * This method returns memory amount occupied by this MultiDataSet.
+     *
+     * @return value in bytes
+     */
+    long getMemoryFootprint();
+
+    /**
+     * This method migrates this MultiDataSet into current Workspace (if any)
+     */
+    void migrate();
+
+    /**
+     * This method detaches this MultiDataSet from current Workspace (if any)
+     */
+    void detach();
+
+    /**
+     * @return True if the MultiDataSet is empty (all features/labels arrays are empty)
+     */
+    boolean isEmpty();
+
+    /**
+     * Shuffle the order of the examples in the MultiDataSet. Note that this generally won't make any difference in
+     * practice unless the MultiDataSet is later split.
+     */
+    void shuffle();
 }

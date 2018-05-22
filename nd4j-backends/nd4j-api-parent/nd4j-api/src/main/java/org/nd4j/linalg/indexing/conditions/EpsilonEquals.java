@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -26,12 +26,30 @@ import org.nd4j.linalg.factory.Nd4j;
  * Created by agibsonccc on 10/8/14.
  */
 public class EpsilonEquals extends BaseCondition {
+    private double eps = Nd4j.EPS_THRESHOLD;
+    /**
+     * Special constructor for pairwise boolean operations.
+     */
+    public EpsilonEquals() {
+        this(0.0);
+    }
+
     public EpsilonEquals(Number value) {
+        this(value, Nd4j.EPS_THRESHOLD);
+    }
+
+    public EpsilonEquals(Number value, Number eps) {
         super(value);
+        this.eps = eps.doubleValue();
     }
 
     public EpsilonEquals(IComplexNumber complexNumber) {
         super(complexNumber);
+    }
+
+    @Override
+    public double epsThreshold() {
+        return this.eps;
     }
 
     /**

@@ -1,7 +1,6 @@
 package org.nd4j.linalg.compression;
 
 import lombok.Data;
-import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 import java.io.Serializable;
@@ -10,7 +9,7 @@ import java.nio.ByteOrder;
 
 /**
  * A compression descriptor containing the
- * compression type, compression algorithm,
+ * compression opType, compression algorithm,
  * original length, compressed length,
  * number of elements, and the original
  * element size
@@ -27,6 +26,7 @@ public class CompressionDescriptor implements Cloneable, Serializable {
     private long originalElementSize;
     //40 bytes for the compression descriptor bytebuffer
     public final static int COMPRESSION_BYTE_BUFFER_LENGTH = 40;
+
     public CompressionDescriptor() {
 
     }
@@ -58,7 +58,7 @@ public class CompressionDescriptor implements Cloneable, Serializable {
     /**
      * Initialize a compression descriptor
      * based on the given data buffer (for the sizes)
-     * and the compressor to get the type
+     * and the compressor to get the opType
      * @param buffer
      * @param compressor
      */
@@ -78,7 +78,7 @@ public class CompressionDescriptor implements Cloneable, Serializable {
      */
     public static CompressionDescriptor fromByteBuffer(ByteBuffer byteBuffer) {
         CompressionDescriptor compressionDescriptor = new CompressionDescriptor();
-        //compression type
+        //compression opType
         int compressionTypeOrdinal = byteBuffer.getInt();
         CompressionType compressionType = CompressionType.values()[compressionTypeOrdinal];
         compressionDescriptor.setCompressionType(compressionType);
@@ -101,7 +101,7 @@ public class CompressionDescriptor implements Cloneable, Serializable {
      * The size of the bytebuffer is calculated to be:
      * 40: 8 + 32
      * two ints representing their enum values
-     * for the compression algorithm and type
+     * for the compression algorithm and opType
      *
      * and 4 longs for the compressed and
      * original sizes
@@ -125,7 +125,7 @@ public class CompressionDescriptor implements Cloneable, Serializable {
     }
 
     @Override
-    public CompressionDescriptor clone()  {
+    public CompressionDescriptor clone() {
         CompressionDescriptor descriptor = new CompressionDescriptor();
         descriptor.compressionType = this.compressionType;
         descriptor.compressionAlgorithm = this.compressionAlgorithm;

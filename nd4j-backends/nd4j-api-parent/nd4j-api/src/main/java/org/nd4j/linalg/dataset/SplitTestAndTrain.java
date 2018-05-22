@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -22,7 +22,7 @@ package org.nd4j.linalg.dataset;
 import java.io.Serializable;
 
 /**
- * Split test and train
+ * SplitV test and train
  *
  * @author Adam Gibson
  */

@@ -1,6 +1,6 @@
 package jcuda.jcublas.ops;
 
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -11,7 +11,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -106,7 +105,7 @@ public class AveragingTests {
     public void testMultiDeviceAveraging() throws Exception {
         final List<Pair<INDArray, INDArray>> pairs = new ArrayList<>();
 
-        int numDevices = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size();
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
 

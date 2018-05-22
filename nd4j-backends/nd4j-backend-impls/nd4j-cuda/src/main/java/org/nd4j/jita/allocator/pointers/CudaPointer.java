@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
  *
  * PLEASE NOTE:
  * 1. All pointers are blind, and do NOT care about length/capacity/offsets/strides whatever
- * 2. They are really blind. Even data type is unknown.
+ * 2. They are really blind. Even data opType is unknown.
  *
  * @author raver119@gmail.com
  */
@@ -31,7 +31,7 @@ public class CudaPointer extends Pointer {
         this.limit = capacity;
         this.position = 0;
 
-     //   logger.info("Creating pointer: ["+this.address+"],  capacity: ["+this.capacity+"]");
+        //   logger.info("Creating pointer: ["+this.address+"],  capacity: ["+this.capacity+"]");
     }
 
     public CudaPointer(Pointer pointer, long capacity, long byteOffset) {
@@ -58,6 +58,10 @@ public class CudaPointer extends Pointer {
 
     public FloatPointer asFloatPointer() {
         return new FloatPointer(this);
+    }
+
+    public LongPointer asLongPointer() {
+        return new LongPointer(this);
     }
 
     public DoublePointer asDoublePointer() {

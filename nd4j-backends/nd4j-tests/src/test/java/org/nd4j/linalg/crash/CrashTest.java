@@ -6,20 +6,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.Sqrt;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-
-import java.util.Arrays;
 
 /**
  * This set of test launches different ops in different order, to check for possible data corruption cases
@@ -33,55 +30,34 @@ public class CrashTest extends BaseNd4jTest {
         super(backend);
     }
 
-    private static final int ITERATIONS = 100;
+    private static final int ITERATIONS = 10;
     private static final boolean[] paramsA = new boolean[] {true, false};
     private static final boolean[] paramsB = new boolean[] {true, false};
 
-    @Test
-    public void testArrays1() {
-        System.out.println("arrays 1");
-        INDArray x = Nd4j.create(1024, 64);
-        INDArray y = Nd4j.create(64, 1024);
-
-        for(int i = 0; i < ITERATIONS; i++) {
-            op(x, y, i);
-        }
-    }
-
-    @Test
-    public void testArrays2() {
-        System.out.println("arrays 2");
-        INDArray x = Nd4j.create(1024, 64, 'f');
-        INDArray y = Nd4j.create(64, 1024, 'f');
-
-        for(int i = 0; i < ITERATIONS; i++) {
-            op(x, y, i);
-        }
-    }
 
     /**
      * tensorAlongDimension() produces shapeInfo without EWS defined
      */
     @Test
     public void testNonEWSViews1() {
-        System.out.println("non-EWS 1");
+        log.debug("non-EWS 1");
         INDArray x = Nd4j.create(64, 1024, 64);
         INDArray y = Nd4j.create(64, 64, 1024);
 
-        for(int i = 0; i < ITERATIONS; i++) {
-            int slice = RandomUtils.nextInt(0, x.shape()[0]);
+        for (int i = 0; i < ITERATIONS; i++) {
+            int slice = RandomUtils.nextInt(0, (int) x.size(0));
             op(x.tensorAlongDimension(slice, 1, 2), y.tensorAlongDimension(slice, 1, 2), i);
         }
     }
 
     @Test
     public void testNonEWSViews2() {
-        System.out.println("non-EWS 2");
+        log.debug("non-EWS 2");
         INDArray x = Nd4j.create(new int[] {64, 1024, 64}, 'f');
         INDArray y = Nd4j.create(new int[] {64, 64, 1024}, 'f');
 
-        for(int i = 0; i < ITERATIONS; i++) {
-            int slice = RandomUtils.nextInt(0, x.shape()[0]);
+        for (int i = 0; i < ITERATIONS; i++) {
+            int slice = RandomUtils.nextInt(0, (int) x.size(0));
             op(x.tensorAlongDimension(slice, 1, 2), y.tensorAlongDimension(slice, 1, 2), i);
         }
     }
@@ -91,23 +67,24 @@ public class CrashTest extends BaseNd4jTest {
      */
     @Test
     public void testEWSViews1() {
-        System.out.println("EWS 1");
+        log.debug("EWS 1");
         INDArray x = Nd4j.create(64, 1024, 64);
         INDArray y = Nd4j.create(64, 64, 1024);
 
-        for(int i = 0; i < ITERATIONS; i++) {
-            int slice = RandomUtils.nextInt(0, x.shape()[0]);
+        for (int i = 0; i < ITERATIONS; i++) {
+            // FIXME: int cast
+            int slice = RandomUtils.nextInt(0, (int) x.shape()[0]);
             op(x.slice(slice), y.slice(slice), i);
         }
     }
 
     @Test
     public void testEWSViews2() {
-        System.out.println("EWS 2");
+        log.debug("EWS 2");
         INDArray x = Nd4j.create(new int[] {96, 1024, 64}, 'f');
         INDArray y = Nd4j.create(new int[] {96, 64, 1024}, 'f');
 
-        for(int i = 0; i < ITERATIONS; i++) {
+        for (int i = 0; i < 1; i++) {
             int slice = 0; //RandomUtils.nextInt(0, x.shape()[0]);
             op(x.slice(slice), y.slice(slice), i);
         }
@@ -164,7 +141,7 @@ public class CrashTest extends BaseNd4jTest {
 
 
         // logisoftmax, softmax & softmax derivative
-        Nd4j.getExecutioner().exec(new SoftMax(x));
+        Nd4j.getExecutioner().exec(new OldSoftMax(x));
         Nd4j.getExecutioner().exec(new SoftMaxDerivative(x));
         Nd4j.getExecutioner().exec(new LogSoftMax(x));
 
@@ -199,7 +176,7 @@ public class CrashTest extends BaseNd4jTest {
         // specially for views, checking here without dup and rollover
         Nd4j.gemm(x, y, false, false);
 
-        System.out.println("Iteration passed: " + i);
+        log.debug("Iteration passed: " + i);
     }
 
     @Override

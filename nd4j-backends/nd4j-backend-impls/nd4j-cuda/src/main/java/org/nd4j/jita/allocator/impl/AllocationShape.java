@@ -21,10 +21,15 @@ public class AllocationShape {
         this.length = length;
         this.elementSize = elementSize;
     }
-*/
+    */
     public AllocationShape(long length, int elementSize, DataBuffer.Type dataType) {
         this.length = length;
         this.elementSize = elementSize;
         this.dataType = dataType;
+    }
+
+
+    public long getNumberOfBytes() {
+        return this.length * this.elementSize;
     }
 }

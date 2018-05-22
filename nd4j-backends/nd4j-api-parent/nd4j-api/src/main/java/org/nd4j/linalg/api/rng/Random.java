@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,6 +19,8 @@
 
 package org.nd4j.linalg.api.rng;
 
+import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -27,7 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public interface Random {
+public interface Random extends AutoCloseable {
 
     /**
      * Sets the seed of the underlying random number generator using an
@@ -170,6 +172,9 @@ public interface Random {
      */
     INDArray nextGaussian(int[] shape);
 
+
+    INDArray nextGaussian(long[] shape);
+
     /**
      * Generate a gaussian number ndarray
      * of the specified shape and order
@@ -180,6 +185,9 @@ public interface Random {
      */
     INDArray nextGaussian(char order, int[] shape);
 
+
+    INDArray nextGaussian(char order, long[] shape);
+
     /**
      * Generate a uniform number ndarray
      * of the specified shape
@@ -188,6 +196,8 @@ public interface Random {
      * @return the generated gaussian numbers
      */
     INDArray nextDouble(int[] shape);
+
+    INDArray nextDouble(long[] shape);
 
     /**
      * Generate a uniform number ndarray
@@ -199,14 +209,31 @@ public interface Random {
      */
     INDArray nextDouble(char order, int[] shape);
 
+
+    INDArray nextDouble(char order, long[] shape);
+
     /**
-     * Generate a gaussian number ndarray
+     * Generate a uniform number ndarray
      * of the specified shape
      *
      * @param shape the shape to generate
-     * @return the generated gaussian numbers
+     * @return the generated uniform numbers
      */
     INDArray nextFloat(int[] shape);
+
+
+    INDArray nextFloat(long[] shape);
+
+    /**
+     * Generate a uniform number ndarray
+     * of the specified shape
+     *
+     * @param shape the shape to generate
+     * @return the generated uniform numbers
+     */
+    INDArray nextFloat(char order, int[] shape);
+
+    INDArray nextFloat(char order, long[] shape);
 
     /**
      * Generate a random set of integers
@@ -217,7 +244,7 @@ public interface Random {
      * having the same space usage as floats.
      * This also plays nice with blas.
      * <p/>
-     * If the data type is set to double,
+     * If the data opType is set to double,
      * then these will be whole doubles.
      *
      * @param shape the shape to generate
@@ -226,6 +253,8 @@ public interface Random {
      */
     INDArray nextInt(int[] shape);
 
+    INDArray nextInt(long[] shape);
+
 
     /**
      * Generate a random set of integers
@@ -236,7 +265,7 @@ public interface Random {
      * having the same space usage as floats.
      * This also plays nice with blas.
      * <p/>
-     * If the data type is set to double,
+     * If the data opType is set to double,
      * then these will be whole doubles.
      *
      * @param shape the shape to generate
@@ -246,6 +275,39 @@ public interface Random {
      */
     INDArray nextInt(int n, int[] shape);
 
+    INDArray nextInt(int n, long[] shape);
+
+    /**
+     * This method returns pointer to RNG state structure.
+     * Please note: DefaultRandom implementation returns NULL here, making it impossible to use with RandomOps
+     *
+     * @return
+     */
+    Pointer getStatePointer();
+
+    /**
+     * This method returns pointer to RNG buffer
+     *
+     * @return
+     */
+    DataBuffer getStateBuffer();
+
+    /**
+     * This method is similar to setSeed() but it doesn't really touches underlying buffer, if any. So it acts as additional modifier to current RNG state. System.currentTimeMillis() will be used as modifier.
+     *
+     * PLEASE NOTE: Never use this method unless you're 100% sure what it does and why you would need it.
+     *
+     */
+    void reSeed();
+
+    /**
+     * This method is similar to setSeed() but it doesn't really touches underlying buffer, if any. So it acts as additional modifier to current RNG state.
+     *
+     * PLEASE NOTE: Never use this method unless you're 100% sure what it does and why you would need it.
+     *
+     * @param seed
+     */
+    void reSeed(long seed);
 }
 
 
